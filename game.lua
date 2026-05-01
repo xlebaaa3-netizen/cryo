@@ -165,17 +165,12 @@ local function getMaxZone()
     return success and result or 1
 end
 
-local function teleportToZone()
-    if not zonesRF then return end
-    pcall(function() zonesRF:InvokeServer("requestTeleportZone", getMaxZone()) end)
-end
-
 local function doBuyZone()
     if not zonesRF then return false end
-    local success = pcall(function()
+    pcall(function()
         zonesRF:InvokeServer("requestPurchaseZone")
     end)
-    return success
+    return true
 end
 
 local function claimIndexReward(category)
@@ -201,7 +196,7 @@ mainPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainPanel.BackgroundTransparency = 0
 mainPanel.BorderSizePixel = 0
 mainPanel.Active = true
-mainPanel.Draggable = false  -- Отключаем стандартный Draggable
+mainPanel.Draggable = false
 mainPanel.Visible = false
 mainPanel.Parent = gui
 
@@ -232,36 +227,34 @@ headerFix.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 headerFix.BorderSizePixel = 0
 headerFix.Parent = header
 
--- Перемещение только за заголовок
-local draggingConnections = {
-    start = nil,
-    update = nil,
-    end = nil,
-    dragging = false,
-    dragStart = nil,
-    startPos = nil
-}
+-- ПЕРЕМЕЩЕНИЕ (ИСПРАВЛЕННОЕ)
+local isDragging = false
+local dragStart = nil
+local dragStartPos = nil
 
 header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        draggingConnections.dragging = true
-        draggingConnections.dragStart = input.Position
-        draggingConnections.startPos = mainPanel.Position
+        isDragging = true
+        dragStart = Vector2.new(input.Position.X, input.Position.Y)
+        dragStartPos = mainPanel.Position
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if draggingConnections.dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - draggingConnections.dragStart
-        local newX = draggingConnections.startPos.X.Offset + delta.X
-        local newY = draggingConnections.startPos.Y.Offset + delta.Y
+    if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local currentPos = Vector2.new(input.Position.X, input.Position.Y)
+        local delta = currentPos - dragStart
+        local newX = dragStartPos.X.Offset + delta.X
+        local newY = dragStartPos.Y.Offset + delta.Y
         mainPanel.Position = UDim2.new(0, newX, 0, newY)
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        draggingConnections.dragging = false
+        isDragging = false
+        dragStart = nil
+        dragStartPos = nil
     end
 end)
 
@@ -696,9 +689,7 @@ local function fillAutoTab()
     end)
     
     createSection("Auto Zone")
-    createToggle("Auto Buy New Zone", "autoBuyNewZone", function(s)
-        -- callback уже в основном цикле
-    end)
+    createToggle("Auto Buy New Zone", "autoBuyNewZone", function(s) end)
     
     createSection("Auto Index")
     createToggle("Auto Claim Index", "autoClaimIndex", function(s)
@@ -809,14 +800,14 @@ local minimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     if minimized then
-        -- Сворачиваем - скрываем всё содержимое
-        TweenService:Create(contentArea, TweenInfo.new(0.3), {Size = UDim2.new(1, -100, 0, 0)}):Play()
-        TweenService:Create(tabContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 100, 0, 0)}):Play()
+        -- Сворачиваем - скрываем контент, но оставляем заголовок
+        contentArea.Visible = false
+        tabContainer.Visible = false
         TweenService:Create(mainPanel, TweenInfo.new(0.3), {Size = UDim2.new(0, 420, 0, 50)}):Play()
     else
-        -- Разворачиваем - показываем всё обратно
-        TweenService:Create(contentArea, TweenInfo.new(0.3), {Size = UDim2.new(1, -100, 1, -50)}):Play()
-        TweenService:Create(tabContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 100, 1, -50)}):Play()
+        -- Разворачиваем
+        contentArea.Visible = true
+        tabContainer.Visible = true
         TweenService:Create(mainPanel, TweenInfo.new(0.3), {Size = UDim2.new(0, 420, 0, 520)}):Play()
     end
 end)
@@ -890,10 +881,6 @@ task.spawn(function()
     while true do
         if states.autoBuyNewZone and LocalPlayer and LocalPlayer.Character then
             doBuyZone()
-            if states.autoTeleportToNewZone then
-                task.wait(0.3)
-                teleportToZone()
-            end
         end
         task.wait(0.5)
     end
