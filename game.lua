@@ -490,8 +490,8 @@ local function createSlider(text, stateKey, min, max, callback)
         states[stateKey] = value
         label.Text = text .. ": " .. value
         
-        TweenService:Create(fill, TweenInfo.new(0.1), {Size = UDim2.new(relativeX, 0, 1, 0)}):Play()
-        TweenService:Create(handle, TweenInfo.new(0.1), {Position = UDim2.new(relativeX, -7, 0.5, -7)}):Play()
+        fill.Size = UDim2.new(relativeX, 0, 1, 0)
+        handle.Position = UDim2.new(relativeX, -7, 0.5, -7)
         
         if callback then
             callback(value)
@@ -514,16 +514,6 @@ local function createSlider(text, stateKey, min, max, callback)
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-        end
-    end)
-    
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local pos = input.Position.X
-            if pos >= track.AbsolutePosition.X and pos <= track.AbsolutePosition.X + track.AbsoluteSize.X then
-                dragging = true
-                updateSlider(pos)
-            end
         end
     end)
     
