@@ -39,7 +39,7 @@ local decal = Instance.new("ImageLabel")
 decal.Size = UDim2.new(0, 280, 0, 280)
 decal.Position = UDim2.new(0.5, -140, 0, 0)
 decal.BackgroundTransparency = 1
-decal.Image = "rbxassetid://75309286909772"
+decal.Image = "rbxassetid://119085437225835"
 decal.ImageTransparency = 1
 decal.ImageColor3 = Color3.fromRGB(255, 255, 255)
 decal.ScaleType = Enum.ScaleType.Fit
@@ -51,7 +51,7 @@ local glow = Instance.new("ImageLabel")
 glow.Size = UDim2.new(1.4, 0, 1.4, 0)
 glow.Position = UDim2.new(-0.2, 0, -0.2, 0)
 glow.BackgroundTransparency = 1
-glow.Image = "rbxassetid://75309286909772"
+glow.Image = "rbxassetid://108226463288168"
 glow.ImageTransparency = 1
 glow.ImageColor3 = Color3.fromRGB(100, 150, 255)
 glow.ScaleType = Enum.ScaleType.Stretch
@@ -219,31 +219,11 @@ task.wait(1)
 blur:Destroy()
 splashGui:Destroy()
 
--- ==================== ПОДКЛЮЧАЕМ TORA LIBRARY ====================
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/liebertsx/Tora-Library/main/src/librarynew", true))()
-
--- ==================== ПЕРЕМЕННЫЕ ====================
-local autoCollect = false
-local collectRadius = 50
-
-local autoRoll = false
-
-local autoRebirth = false
-local rebirthDelay = 15
-
-local autoBuyZone = false
-local autoTeleportToNewZone = true
-
-local autoClaimIndex = false
-
-local autoEquipBest = false
-
-local antiAFK = false
-local speedHackEnabled = false
-local walkSpeedValue = 32
-
+-- ==================== НОВЫЙ GUI (КАК У KEY SYSTEM) ====================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 -- Список всех категорий индекса
 local indexCategories = {"basic", "big", "huge", "shiny", "inverted"}
@@ -254,7 +234,7 @@ pcall(function()
     DataService = require(ReplicatedStorage.Packages.DataService).client
 end)
 if not DataService then
-    DataService = { get = function() return 1 end }
+    DataService = { get = function(key) return 1 end }
 end
 
 -- ==================== REMOTE FUNCTION ====================
@@ -287,6 +267,21 @@ local inventoryRF = safeFindRemote({
     "Packages", "_Index", "leifstout_networker@0.3.1", "networker", "_remotes", "InventoryService", "RemoteFunction"
 })
 
+-- ==================== ПЕРЕМЕННЫЕ СОСТОЯНИЯ ====================
+local states = {
+    autoCollect = false,
+    collectRadius = 50,
+    autoRoll = false,
+    autoRebirth = false,
+    rebirthDelay = 15,
+    autoTeleportToNewZone = false,
+    autoClaimIndex = false,
+    autoEquipBest = false,
+    antiAFK = false,
+    speedHackEnabled = false,
+    walkSpeedValue = 32,
+}
+
 -- ==================== АНТИ АФК ====================
 local antiAfkConnection = nil
 local function startAntiAfk()
@@ -305,25 +300,22 @@ end
 
 -- ==================== SPEED HACK ====================
 local speedHackConnection = nil
-
 local function setWalkSpeed(speed)
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("Humanoid") then
         char.Humanoid.WalkSpeed = speed
     end
 end
-
 local function startSpeedHack()
-    setWalkSpeed(walkSpeedValue)
+    setWalkSpeed(states.walkSpeedValue)
     if speedHackConnection then return end
     speedHackConnection = LocalPlayer.CharacterAdded:Connect(function(char)
         task.wait(0.5)
-        if speedHackEnabled and char:FindFirstChild("Humanoid") then
-            char.Humanoid.WalkSpeed = walkSpeedValue
+        if states.speedHackEnabled and char:FindFirstChild("Humanoid") then
+            char.Humanoid.WalkSpeed = states.walkSpeedValue
         end
     end)
 end
-
 local function stopSpeedHack()
     if speedHackConnection then
         speedHackConnection:Disconnect()
@@ -341,11 +333,9 @@ end
 local function getAllLootWithTouchInterest()
     local lootFolder = workspace:FindFirstChild("Loot")
     if not lootFolder then return {} end
-    
     local loots = {}
     local hrp = getHRP()
     local hrpPos = hrp and hrp.Position or Vector3.new()
-    
     for _, obj in pairs(lootFolder:GetChildren()) do
         local touchPart = nil
         if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
@@ -373,7 +363,7 @@ local function collectAllInRange()
     local hrp = getHRP()
     if not hrp then return end
     for _, loot in ipairs(getAllLootWithTouchInterest()) do
-        if loot.Distance <= collectRadius then
+        if loot.Distance <= states.collectRadius then
             pcall(function()
                 firetouchinterest(hrp, loot.TouchPart, 0)
                 task.wait(0.05)
@@ -394,11 +384,15 @@ local function doRebirth()
     if rebirthRF then pcall(function() rebirthRF:InvokeServer("requestRebirth") end) end
 end
 
--- ==================== AUTO ZONE ====================
+-- ==================== AUTO ZONE (ИСПРАВЛЕННАЯ) ====================
 local lastZone = 1
+local zoneCheckConnection = nil
 
 local function getMaxZone()
-    return DataService:get("maxZone") or 1
+    local success, result = pcall(function()
+        return DataService:get("maxZone")
+    end)
+    return success and result or 1
 end
 
 local function teleportToZone()
@@ -407,18 +401,22 @@ local function teleportToZone()
 end
 
 local function doBuyZone()
-    if not zonesRF then return end
-    pcall(function() zonesRF:InvokeServer("requestPurchaseZone") end)
+    if not zonesRF then
+        warn("[Cryo Hub] ZonesRF not found!")
+        return false
+    end
+    local success = pcall(function()
+        zonesRF:InvokeServer("requestPurchaseZone")
+    end)
+    return success
 end
 
 -- Телепорт вверх и вперёд на 300 шагов
 local function smartTeleport()
     local hrp = getHRP()
     if not hrp then return end
-    
     local lookVector = hrp.CFrame.LookVector
     lookVector = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
-    
     local newPos = hrp.Position + Vector3.new(0, 50, 0) + (lookVector * 300)
     hrp.CFrame = CFrame.new(newPos)
 end
@@ -433,114 +431,532 @@ local function doEquipBest()
     if inventoryRF then pcall(function() inventoryRF:InvokeServer("requestEquipBest") end) end
 end
 
--- ==================== UI ====================
-local mainWindow = library:CreateWindow("Cryo Hub")
-local autoFolder = mainWindow:AddFolder("Auto")
+-- ==================== СОЗДАНИЕ НОВОГО GUI ====================
+local gui = Instance.new("ScreenGui")
+gui.Name = "CryoHubGUI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = PlayerGui
 
--- Auto Collect
-autoFolder:AddToggle({
-    text = "Auto Collect",
-    flag = "autoCollect",
-    callback = function(s)
-        autoCollect = s
-        if autoCollect then
-            task.spawn(function() 
-                while autoCollect do 
-                    collectAllInRange() 
-                    task.wait(0.1) 
-                end 
-            end)
-        end
-    end
-})
-autoFolder:AddSlider({
-    text = "Radius",
-    flag = "collectRadius",
-    min = 10, max = 100, value = 50,
-    callback = function(v) collectRadius = v end
-})
+-- Blur для GUI
+local guiBlur = Instance.new("BlurEffect")
+guiBlur.Size = 0
+guiBlur.Parent = game:GetService("Lighting")
 
--- Auto Roll
-autoFolder:AddToggle({
-    text = "Auto Roll",
-    flag = "autoRoll",
-    callback = function(s)
-        autoRoll = s
-        if autoRoll then
-            task.spawn(function() 
-                while autoRoll do 
-                    doRoll() 
-                    task.wait(0.1) 
-                end 
-            end)
-        end
-    end
-})
+-- Основная панель (можно двигать)
+local mainPanel = Instance.new("Frame")
+mainPanel.Size = UDim2.new(0, 420, 0, 520)
+mainPanel.Position = UDim2.new(0.5, -210, 0.5, -260)
+mainPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+mainPanel.BackgroundTransparency = 0
+mainPanel.BorderSizePixel = 0
+mainPanel.Active = true
+mainPanel.Draggable = true
+mainPanel.Parent = gui
 
--- Auto Rebirth
-autoFolder:AddToggle({
-    text = "Auto Rebirth",
-    flag = "autoRebirth",
-    callback = function(s)
-        autoRebirth = s
-        if autoRebirth then
-            task.spawn(function() 
-                while autoRebirth do 
-                    doRebirth() 
-                    task.wait(rebirthDelay) 
-                end 
-            end)
-        end
-    end
-})
-autoFolder:AddSlider({
-    text = "Rebirth Delay",
-    flag = "rebirthDelay",
-    min = 5, max = 60, value = 15,
-    callback = function(v) rebirthDelay = v end
-})
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainPanel
 
--- Auto Zone - покупка работает ПОСТОЯННО
-task.spawn(function()
-    while true do
-        local currentZone = getMaxZone()
-        doBuyZone()
-        
-        if currentZone > lastZone then
-            lastZone = currentZone
-            task.wait(0.3)
-            smartTeleport()
-        end
-        
-        task.wait(0.5)
-    end
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(60, 60, 80)
+mainStroke.Thickness = 1.5
+mainStroke.Parent = mainPanel
+
+-- Заголовок
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 50)
+header.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+header.BackgroundTransparency = 0
+header.BorderSizePixel = 0
+header.Parent = mainPanel
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 12)
+headerCorner.Parent = header
+
+-- Fix corners
+local headerFix = Instance.new("Frame")
+headerFix.Size = UDim2.new(1, 0, 0, 10)
+headerFix.Position = UDim2.new(0, 0, 1, -10)
+headerFix.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+headerFix.BorderSizePixel = 0
+headerFix.Parent = header
+
+-- Логотип в заголовке
+local headerLogo = Instance.new("ImageLabel")
+headerLogo.Size = UDim2.new(0, 32, 0, 32)
+headerLogo.Position = UDim2.new(0, 12, 0, 9)
+headerLogo.BackgroundTransparency = 1
+headerLogo.Image = "rbxassetid://119085437225835"
+headerLogo.ScaleType = Enum.ScaleType.Fit
+headerLogo.Parent = header
+
+-- Текст заголовка
+local headerTitle = Instance.new("TextLabel")
+headerTitle.Size = UDim2.new(0, 200, 0, 30)
+headerTitle.Position = UDim2.new(0, 50, 0, 10)
+headerTitle.BackgroundTransparency = 1
+headerTitle.Text = "Cryo Hub"
+headerTitle.Font = Enum.Font.GothamBlack
+headerTitle.TextSize = 22
+headerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+headerTitle.TextXAlignment = Enum.TextXAlignment.Left
+headerTitle.Parent = header
+
+-- Кнопка закрытия
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0, 10)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "×"
+closeBtn.Font = Enum.Font.GothamBlack
+closeBtn.TextSize = 24
+closeBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+closeBtn.Parent = header
+
+-- Кнопка сворачивания
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+minimizeBtn.Position = UDim2.new(1, -75, 0, 10)
+minimizeBtn.BackgroundTransparency = 1
+minimizeBtn.Text = "−"
+minimizeBtn.Font = Enum.Font.GothamBlack
+minimizeBtn.TextSize = 24
+minimizeBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+minimizeBtn.Parent = header
+
+-- Контейнер вкладок
+local tabContainer = Instance.new("Frame")
+tabContainer.Size = UDim2.new(0, 100, 1, -50)
+tabContainer.Position = UDim2.new(0, 0, 0, 50)
+tabContainer.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+tabContainer.BackgroundTransparency = 0
+tabContainer.BorderSizePixel = 0
+tabContainer.Parent = mainPanel
+
+local tabCorner = Instance.new("UICorner")
+tabCorner.CornerRadius = UDim.new(0, 0)
+tabCorner.Parent = tabContainer
+
+-- Fix tab corners
+local tabFix = Instance.new("Frame")
+tabFix.Size = UDim2.new(0, 10, 1, 0)
+tabFix.Position = UDim2.new(1, -10, 0, 0)
+tabFix.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+tabFix.BorderSizePixel = 0
+tabFix.Parent = tabContainer
+
+-- Контент область
+local contentArea = Instance.new("Frame")
+contentArea.Size = UDim2.new(1, -100, 1, -50)
+contentArea.Position = UDim2.new(0, 100, 0, 50)
+contentArea.BackgroundTransparency = 1
+contentArea.BorderSizePixel = 0
+contentArea.Parent = mainPanel
+
+-- Скролл контейнер
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Size = UDim2.new(1, -20, 1, -20)
+scrollFrame.Position = UDim2.new(0, 10, 0, 10)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 3
+scrollBarImageColor3 = Color3.fromRGB(100, 150, 255)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.Parent = contentArea
+
+local scrollLayout = Instance.new("UIListLayout")
+scrollLayout.SortOrder = Enum.SortOrder.LayoutOrder
+scrollLayout.Padding = UDim.new(0, 8)
+scrollLayout.Parent = scrollFrame
+
+scrollLayout.Changed:Connect(function()
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, scrollLayout.AbsoluteContentSize.Y + 20)
 end)
 
-autoFolder:AddToggle({
-    text = "Auto Teleport Zone",
-    flag = "autoTeleportZone",
-    callback = function(s)
-        autoTeleportToNewZone = s
-        if autoTeleportToNewZone then
+-- ==================== ФУНКЦИИ СОЗДАНИЯ ЭЛЕМЕНТОВ ====================
+
+local function createSection(text)
+    local section = Instance.new("TextLabel")
+    section.Size = UDim2.new(1, -10, 0, 25)
+    section.BackgroundTransparency = 1
+    section.Text = text
+    section.Font = Enum.Font.GothamBold
+    section.TextSize = 14
+    section.TextColor3 = Color3.fromRGB(100, 150, 255)
+    section.TextXAlignment = Enum.TextXAlignment.Left
+    section.LayoutOrder = #scrollFrame:GetChildren()
+    section.Parent = scrollFrame
+    return section
+end
+
+local function createToggle(text, stateKey, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 40)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    frame.BackgroundTransparency = 0
+    frame.BorderSizePixel = 0
+    frame.LayoutOrder = #scrollFrame:GetChildren()
+    frame.Parent = scrollFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -60, 1, 0)
+    label.Position = UDim2.new(0, 12, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 15
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    
+    -- Toggle switch
+    local toggleBg = Instance.new("Frame")
+    toggleBg.Size = UDim2.new(0, 44, 0, 24)
+    toggleBg.Position = UDim2.new(1, -56, 0.5, -12)
+    toggleBg.BackgroundColor3 = states[stateKey] and Color3.fromRGB(100, 150, 255) or Color3.fromRGB(50, 50, 55)
+    toggleBg.BorderSizePixel = 0
+    toggleBg.Parent = frame
+    
+    local toggleCorner = Instance.new("UICorner")
+    toggleCorner.CornerRadius = UDim.new(1, 0)
+    toggleCorner.Parent = toggleBg
+    
+    local toggleCircle = Instance.new("Frame")
+    toggleCircle.Size = UDim2.new(0, 18, 0, 18)
+    toggleCircle.Position = states[stateKey] and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+    toggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    toggleCircle.BorderSizePixel = 0
+    toggleCircle.Parent = toggleBg
+    
+    local circleCorner = Instance.new("UICorner")
+    circleCorner.CornerRadius = UDim.new(1, 0)
+    circleCorner.Parent = toggleCircle
+    
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 1, 0)
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.Parent = frame
+    
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(frame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 35)}):Play()
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(frame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(25, 25, 30)}):Play()
+    end)
+    
+    btn.MouseButton1Click:Connect(function()
+        states[stateKey] = not states[stateKey]
+        
+        -- Анимация переключения
+        TweenService:Create(toggleBg, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundColor3 = states[stateKey] and Color3.fromRGB(100, 150, 255) or Color3.fromRGB(50, 50, 55)
+        }):Play()
+        
+        TweenService:Create(toggleCircle, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            Position = states[stateKey] and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+        }):Play()
+        
+        if callback then
+            callback(states[stateKey])
+        end
+    end)
+    
+    return frame
+end
+
+local function createSlider(text, stateKey, min, max, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, -10, 0, 60)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    frame.BackgroundTransparency = 0
+    frame.BorderSizePixel = 0
+    frame.LayoutOrder = #scrollFrame:GetChildren()
+    frame.Parent = scrollFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -20, 0, 20)
+    label.Position = UDim2.new(0, 12, 0, 8)
+    label.BackgroundTransparency = 1
+    label.Text = text .. ": " .. states[stateKey]
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 14
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = frame
+    
+    -- Slider track
+    local track = Instance.new("Frame")
+    track.Size = UDim2.new(1, -30, 0, 6)
+    track.Position = UDim2.new(0, 15, 0, 38)
+    track.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    track.BorderSizePixel = 0
+    track.Parent = frame
+    
+    local trackCorner = Instance.new("UICorner")
+    trackCorner.CornerRadius = UDim.new(1, 0)
+    trackCorner.Parent = track
+    
+    -- Fill
+    local fill = Instance.new("Frame")
+    local percent = (states[stateKey] - min) / (max - min)
+    fill.Size = UDim2.new(percent, 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+    fill.BorderSizePixel = 0
+    fill.Parent = track
+    
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(1, 0)
+    fillCorner.Parent = fill
+    
+    -- Handle
+    local handle = Instance.new("Frame")
+    handle.Size = UDim2.new(0, 14, 0, 14)
+    handle.Position = UDim2.new(percent, -7, 0.5, -7)
+    handle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    handle.BorderSizePixel = 0
+    handle.Parent = track
+    
+    local handleCorner = Instance.new("UICorner")
+    handleCorner.CornerRadius = UDim.new(1, 0)
+    handleCorner.Parent = handle
+    
+    -- Input handling
+    local dragging = false
+    
+    local function updateSlider(inputX)
+        local trackPos = track.AbsolutePosition.X
+        local trackSize = track.AbsoluteSize.X
+        local relativeX = math.clamp((inputX - trackPos) / trackSize, 0, 1)
+        local value = math.floor(min + (relativeX * (max - min)))
+        
+        states[stateKey] = value
+        label.Text = text .. ": " .. value
+        
+        TweenService:Create(fill, TweenInfo.new(0.1), {Size = UDim2.new(relativeX, 0, 1, 0)}):Play()
+        TweenService:Create(handle, TweenInfo.new(0.1), {Position = UDim2.new(relativeX, -7, 0.5, -7)}):Play()
+        
+        if callback then
+            callback(value)
+        end
+    end
+    
+    track.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            updateSlider(input.Position.X)
+        end
+    end)
+    
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            updateSlider(input.Position.X)
+        end
+    end)
+    
+    game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            local pos = input.Position.X
+            if pos >= track.AbsolutePosition.X and pos <= track.AbsolutePosition.X + track.AbsoluteSize.X then
+                dragging = true
+                updateSlider(pos)
+            end
+        end
+    end)
+    
+    return frame
+end
+
+local function createButton(text, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+    btn.BackgroundTransparency = 0
+    btn.BorderSizePixel = 0
+    btn.Text = text
+    btn.Font = Enum.Font.GothamBlack
+    btn.TextSize = 15
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.LayoutOrder = #scrollFrame:GetChildren()
+    btn.Parent = scrollFrame
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = btn
+    
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(120, 170, 255)}):Play()
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 150, 255)}):Play()
+    end)
+    
+    btn.MouseButton1Click:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 130, 235)}):Play()
+        task.wait(0.1)
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(120, 170, 255)}):Play()
+        if callback then callback() end
+    end)
+    
+    return btn
+end
+
+local function createLabel(text)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 0, 20)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.Font = Enum.Font.Gotham
+    label.TextSize = 13
+    label.TextColor3 = Color3.fromRGB(180, 180, 180)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.LayoutOrder = #scrollFrame:GetChildren()
+    label.Parent = scrollFrame
+    return label
+end
+
+-- ==================== ВКЛАДКИ ====================
+local tabs = {}
+local currentTab = nil
+
+local function createTab(name, icon)
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.Size = UDim2.new(1, 0, 0, 40)
+    tabBtn.Position = UDim2.new(0, 0, 0, #tabs * 42)
+    tabBtn.BackgroundTransparency = 1
+    tabBtn.Text = name
+    tabBtn.Font = Enum.Font.GothamBold
+    tabBtn.TextSize = 13
+    tabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
+    tabBtn.Parent = tabContainer
+    
+    local indicator = Instance.new("Frame")
+    indicator.Size = UDim2.new(0, 3, 0, 20)
+    indicator.Position = UDim2.new(0, 0, 0.5, -10)
+    indicator.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+    indicator.BackgroundTransparency = 1
+    indicator.BorderSizePixel = 0
+    indicator.Parent = tabBtn
+    
+    table.insert(tabs, {btn = tabBtn, indicator = indicator, name = name})
+    
+    tabBtn.MouseEnter:Connect(function()
+        if currentTab ~= name then
+            TweenService:Create(tabBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(200, 200, 200)}):Play()
+        end
+    end)
+    
+    tabBtn.MouseLeave:Connect(function()
+        if currentTab ~= name then
+            TweenService:Create(tabBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+        end
+    end)
+    
+    tabBtn.MouseButton1Click:Connect(function()
+        -- Сбросить все вкладки
+        for _, t in ipairs(tabs) do
+            TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+            TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+        end
+        
+        -- Активировать текущую
+        currentTab = name
+        TweenService:Create(tabBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+        TweenService:Create(indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+        
+        -- Очистить контент
+        for _, child in ipairs(scrollFrame:GetChildren()) do
+            if child:IsA("GuiObject") and child ~= scrollLayout then
+                child:Destroy()
+            end
+        end
+        
+        -- Заполнить контент (вызовется извне)
+    end)
+    
+    return tabBtn
+end
+
+-- ==================== ЗАПОЛНЕНИЕ ВКЛАДОК ====================
+
+local function fillAutoTab()
+    createSection("Auto Collect")
+    createToggle("Auto Collect", "autoCollect", function(s)
+        if s then
             task.spawn(function()
-                while autoTeleportToNewZone do
+                while states.autoCollect do
+                    collectAllInRange()
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end)
+    createSlider("Radius", "collectRadius", 10, 100, function(v)
+        states.collectRadius = v
+    end)
+    
+    createSection("Auto Roll")
+    createToggle("Auto Roll", "autoRoll", function(s)
+        if s then
+            task.spawn(function()
+                while states.autoRoll do
+                    doRoll()
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end)
+    
+    createSection("Auto Rebirth")
+    createToggle("Auto Rebirth", "autoRebirth", function(s)
+        if s then
+            task.spawn(function()
+                while states.autoRebirth do
+                    doRebirth()
+                    task.wait(states.rebirthDelay)
+                end
+            end)
+        end
+    end)
+    createSlider("Rebirth Delay", "rebirthDelay", 5, 60, function(v)
+        states.rebirthDelay = v
+    end)
+    
+    createSection("Auto Zone")
+    createToggle("Auto Teleport Zone", "autoTeleportToNewZone", function(s)
+        if s then
+            task.spawn(function()
+                while states.autoTeleportToNewZone do
                     teleportToZone()
                     task.wait(0.5)
                 end
             end)
         end
-    end
-})
-
--- Auto Claim Index
-autoFolder:AddToggle({
-    text = "Auto Claim Index",
-    flag = "autoClaimIndex",
-    callback = function(s)
-        autoClaimIndex = s
-        if autoClaimIndex then
+    end)
+    
+    createSection("Auto Index")
+    createToggle("Auto Claim Index", "autoClaimIndex", function(s)
+        if s then
             task.spawn(function()
-                while autoClaimIndex do
+                while states.autoClaimIndex do
                     for _, cat in ipairs(indexCategories) do
                         claimIndexReward(cat)
                         task.wait(0.1)
@@ -549,68 +965,126 @@ autoFolder:AddToggle({
                 end
             end)
         end
-    end
-})
-
--- Auto Equip Best
-autoFolder:AddToggle({
-    text = "Auto Equip Best",
-    flag = "autoEquipBest",
-    callback = function(s)
-        autoEquipBest = s
-        if autoEquipBest then
-            task.spawn(function() 
-                while autoEquipBest do 
-                    doEquipBest() 
-                    task.wait(0.5) 
-                end 
+    end)
+    
+    createSection("Auto Equip")
+    createToggle("Auto Equip Best", "autoEquipBest", function(s)
+        if s then
+            task.spawn(function()
+                while states.autoEquipBest do
+                    doEquipBest()
+                    task.wait(0.5)
+                end
             end)
         end
-    end
-})
+    end)
+end
 
--- Вкладка Misc
-local miscFolder = mainWindow:AddFolder("Misc")
-
-miscFolder:AddToggle({
-    text = "Anti AFK",
-    flag = "antiAFK",
-    callback = function(s)
-        antiAFK = s
-        if antiAFK then startAntiAfk() else stopAntiAfk() end
-    end
-})
-
-miscFolder:AddToggle({
-    text = "Speed Hack",
-    flag = "speedHack",
-    callback = function(s)
-        speedHackEnabled = s
-        if speedHackEnabled then
+local function fillMiscTab()
+    createSection("Player")
+    createToggle("Anti AFK", "antiAFK", function(s)
+        if s then startAntiAfk() else stopAntiAfk() end
+    end)
+    createToggle("Speed Hack", "speedHackEnabled", function(s)
+        if s then
             startSpeedHack()
-            setWalkSpeed(walkSpeedValue)
+            setWalkSpeed(states.walkSpeedValue)
         else
             stopSpeedHack()
         end
+    end)
+    createSlider("Walk Speed", "walkSpeedValue", 16, 250, function(v)
+        states.walkSpeedValue = v
+        if states.speedHackEnabled then setWalkSpeed(v) end
+    end)
+end
+
+local function fillCreditsTab()
+    createLabel("")
+    createLabel("UI: Tora")
+    createLabel("Creator: Powder")
+    createLabel("")
+    createLabel("Thanks For Using My Script!")
+end
+
+-- ==================== ИНИЦИАЛИЗАЦИЯ ВКЛАДОК ====================
+
+local autoTab = createTab("Auto")
+local miscTab = createTab("Misc")
+local creditsTab = createTab("Credits")
+
+-- Переключение вкладок
+autoTab.MouseButton1Click:Connect(fillAutoTab)
+miscTab.MouseButton1Click:Connect(fillMiscTab)
+creditsTab.MouseButton1Click:Connect(fillCreditsTab)
+
+-- По умолчанию открываем Auto
+autoTab.MouseButton1Click:Fire()
+
+-- ==================== КНОПКИ ЗАГОЛОВКА ====================
+
+closeBtn.MouseEnter:Connect(function()
+    TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 80, 80)}):Play()
+end)
+
+closeBtn.MouseLeave:Connect(function()
+    TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    TweenService:Create(mainPanel, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(0.5, 0, 0.5, 0)
+    }):Play()
+    TweenService:Create(guiBlur, TweenInfo.new(0.3), {Size = 0}):Play()
+    task.wait(0.3)
+    gui:Destroy()
+    guiBlur:Destroy()
+end)
+
+minimizeBtn.MouseEnter:Connect(function()
+    TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+end)
+
+minimizeBtn.MouseLeave:Connect(function()
+    TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+end)
+
+local minimized = false
+minimizeBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    if minimized then
+        TweenService:Create(contentArea, TweenInfo.new(0.3), {Size = UDim2.new(1, -100, 0, 0)}):Play()
+        TweenService:Create(mainPanel, TweenInfo.new(0.3), {Size = UDim2.new(0, 420, 0, 50)}):Play()
+    else
+        TweenService:Create(contentArea, TweenInfo.new(0.3), {Size = UDim2.new(1, -100, 1, -50)}):Play()
+        TweenService:Create(mainPanel, TweenInfo.new(0.3), {Size = UDim2.new(0, 420, 0, 520)}):Play()
     end
-})
+end)
 
-miscFolder:AddSlider({
-    text = "Walk Speed",
-    flag = "walkSpeedValue",
-    min = 16, max = 250, value = 32,
-    callback = function(v)
-        walkSpeedValue = v
-        if speedHackEnabled then setWalkSpeed(v) end
+-- ==================== АВТО ПОКУПКА ЗОН (ИСПРАВЛЕННАЯ) ====================
+
+-- Запускаем фоновый процесс покупки зон
+task.spawn(function()
+    while true do
+        -- Проверяем, что игрок в игре
+        if LocalPlayer and LocalPlayer.Character then
+            local currentZone = getMaxZone()
+            local success = doBuyZone()
+            
+            -- Если зона изменилась — телепортируемся вверх и вперёд
+            if currentZone > lastZone then
+                lastZone = currentZone
+                task.wait(0.5)
+                smartTeleport()
+            end
+        end
+        
+        task.wait(0.5)
     end
-})
+end)
 
--- ==================== CREDITS ====================
-local creditsFolder = mainWindow:AddFolder("Credits")
+-- ==================== BLUR ПРИ ОТКРЫТИИ ====================
+TweenService:Create(guiBlur, TweenInfo.new(0.5), {Size = 15}):Play()
 
-creditsFolder:AddLabel({text = "UI: Tora"})
-creditsFolder:AddLabel({text = "Creator: Powder"})
-creditsFolder:AddLabel({text = "Thanks For Using My Script!"})
-
-library:Init()
-print("✅ Cryo Hub loaded by Powder!")
+print("✅ Cryo Hub loaded by Powder! | New GUI v2.0")
