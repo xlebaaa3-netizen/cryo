@@ -227,16 +227,16 @@ headerFix.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 headerFix.BorderSizePixel = 0
 headerFix.Parent = header
 
--- ==================== ПЕРЕМЕЩЕНИЕ (100% РАБОЧЕЕ) ====================
+-- ==================== ПЕРЕМЕЩЕНИЕ (ФИНАЛЬНАЯ ВЕРСИЯ) ====================
 local isDragging = false
 local dragStartMouse = nil
-local dragStartFrame = nil
+local dragStartFramePos = nil
 
 header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         isDragging = true
         dragStartMouse = Vector2.new(input.Position.X, input.Position.Y)
-        dragStartFrame = mainPanel.Position
+        dragStartFramePos = mainPanel.AbsolutePosition
     end
 end)
 
@@ -244,17 +244,17 @@ UserInputService.InputChanged:Connect(function(input)
     if not isDragging then return end
     if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
     
-    local currentMouse = Vector2.new(input.Position.X, input.Position.Y)
-    local delta = currentMouse - dragStartMouse
+    local delta = Vector2.new(input.Position.X, input.Position.Y) - dragStartMouse
+    local newPos = dragStartFramePos + delta
     
-    mainPanel.Position = UDim2.new(0, dragStartFrame.X.Offset + delta.X, 0, dragStartFrame.Y.Offset + delta.Y)
+    mainPanel.Position = UDim2.new(0, newPos.X, 0, newPos.Y)
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         isDragging = false
         dragStartMouse = nil
-        dragStartFrame = nil
+        dragStartFramePos = nil
     end
 end)
 -- ==================== КОНЕЦ ПЕРЕМЕЩЕНИЯ ====================
