@@ -227,36 +227,37 @@ headerFix.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 headerFix.BorderSizePixel = 0
 headerFix.Parent = header
 
--- ПЕРЕМЕЩЕНИЕ (ИСПРАВЛЕННОЕ)
+-- ==================== ПЕРЕМЕЩЕНИЕ (100% РАБОЧЕЕ) ====================
 local isDragging = false
-local dragStart = nil
-local dragStartPos = nil
+local dragStartMouse = nil
+local dragStartFrame = nil
 
 header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         isDragging = true
-        dragStart = Vector2.new(input.Position.X, input.Position.Y)
-        dragStartPos = mainPanel.Position
+        dragStartMouse = Vector2.new(input.Position.X, input.Position.Y)
+        dragStartFrame = mainPanel.Position
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local currentPos = Vector2.new(input.Position.X, input.Position.Y)
-        local delta = currentPos - dragStart
-        local newX = dragStartPos.X.Offset + delta.X
-        local newY = dragStartPos.Y.Offset + delta.Y
-        mainPanel.Position = UDim2.new(0, newX, 0, newY)
-    end
+    if not isDragging then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
+    
+    local currentMouse = Vector2.new(input.Position.X, input.Position.Y)
+    local delta = currentMouse - dragStartMouse
+    
+    mainPanel.Position = UDim2.new(0, dragStartFrame.X.Offset + delta.X, 0, dragStartFrame.Y.Offset + delta.Y)
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         isDragging = false
-        dragStart = nil
-        dragStartPos = nil
+        dragStartMouse = nil
+        dragStartFrame = nil
     end
 end)
+-- ==================== КОНЕЦ ПЕРЕМЕЩЕНИЯ ====================
 
 local headerLogo = Instance.new("ImageLabel")
 headerLogo.Size = UDim2.new(0, 32, 0, 32)
@@ -800,12 +801,10 @@ local minimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     if minimized then
-        -- Сворачиваем - скрываем контент, но оставляем заголовок
         contentArea.Visible = false
         tabContainer.Visible = false
         TweenService:Create(mainPanel, TweenInfo.new(0.3), {Size = UDim2.new(0, 420, 0, 50)}):Play()
     else
-        -- Разворачиваем
         contentArea.Visible = true
         tabContainer.Visible = true
         TweenService:Create(mainPanel, TweenInfo.new(0.3), {Size = UDim2.new(0, 420, 0, 520)}):Play()
