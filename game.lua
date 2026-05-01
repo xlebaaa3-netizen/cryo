@@ -562,7 +562,7 @@ scrollFrame.Position = UDim2.new(0, 10, 0, 10)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 3
-scrollBarImageColor3 = Color3.fromRGB(100, 150, 255)
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 150, 255)
 scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollFrame.Parent = contentArea
 
@@ -1013,13 +1013,74 @@ local autoTab = createTab("Auto")
 local miscTab = createTab("Misc")
 local creditsTab = createTab("Credits")
 
+-- ИСПРАВЛЕНО: Вместо Fire() используем прямой вызов функций
+local function switchToAuto()
+    -- Сбросить все вкладки
+    for _, t in ipairs(tabs) do
+        TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+        TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+    end
+    
+    -- Активировать Auto
+    currentTab = "Auto"
+    TweenService:Create(autoTab, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(tabs[1].indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+    
+    -- Очистить контент
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("GuiObject") and child ~= scrollLayout then
+            child:Destroy()
+        end
+    end
+    
+    fillAutoTab()
+end
+
+local function switchToMisc()
+    for _, t in ipairs(tabs) do
+        TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+        TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+    end
+    
+    currentTab = "Misc"
+    TweenService:Create(miscTab, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(tabs[2].indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+    
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("GuiObject") and child ~= scrollLayout then
+            child:Destroy()
+        end
+    end
+    
+    fillMiscTab()
+end
+
+local function switchToCredits()
+    for _, t in ipairs(tabs) do
+        TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+        TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+    end
+    
+    currentTab = "Credits"
+    TweenService:Create(creditsTab, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(tabs[3].indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+    
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("GuiObject") and child ~= scrollLayout then
+            child:Destroy()
+        end
+    end
+    
+    fillCreditsTab()
+end
+
 -- Переключение вкладок
-autoTab.MouseButton1Click:Connect(fillAutoTab)
-miscTab.MouseButton1Click:Connect(fillMiscTab)
-creditsTab.MouseButton1Click:Connect(fillCreditsTab)
+autoTab.MouseButton1Click:Connect(switchToAuto)
+miscTab.MouseButton1Click:Connect(switchToMisc)
+creditsTab.MouseButton1Click:Connect(switchToCredits)
 
 -- По умолчанию открываем Auto
-autoTab.MouseButton1Click:Fire()
+switchToAuto()
 
 -- ==================== КНОПКИ ЗАГОЛОВКА ====================
 
