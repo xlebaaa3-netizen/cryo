@@ -1,234 +1,14 @@
--- ==================== SPLASH SCREEN ====================
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Создаём ScreenGui для сплеша
-local splashGui = Instance.new("ScreenGui")
-splashGui.Name = "CryoHubSplash"
-splashGui.ResetOnSpawn = false
-splashGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-splashGui.DisplayOrder = 999
-splashGui.Parent = PlayerGui
-
--- Размытый фон (Blur)
-local blur = Instance.new("BlurEffect")
-blur.Size = 0
-blur.Parent = game:GetService("Lighting")
-
--- Фон (тёмный полупрозрачный)
-local bg = Instance.new("Frame")
-bg.Size = UDim2.new(1, 0, 1, 0)
-bg.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
-bg.BackgroundTransparency = 1
-bg.BorderSizePixel = 0
-bg.ZIndex = 1
-bg.Parent = splashGui
-
--- Контейнер для логотипа и текста
-local container = Instance.new("Frame")
-container.Size = UDim2.new(0, 350, 0, 400)
-container.Position = UDim2.new(0.5, -175, 0.5, -200)
-container.BackgroundTransparency = 1
-container.ZIndex = 2
-container.Parent = splashGui
-
--- Логотип (Decal)
-local decal = Instance.new("ImageLabel")
-decal.Size = UDim2.new(0, 280, 0, 280)
-decal.Position = UDim2.new(0.5, -140, 0, 0)
-decal.BackgroundTransparency = 1
-decal.Image = "rbxassetid://119085437225835"
-decal.ImageTransparency = 1
-decal.ImageColor3 = Color3.fromRGB(255, 255, 255)
-decal.ScaleType = Enum.ScaleType.Fit
-decal.ZIndex = 3
-decal.Parent = container
-
--- Glow эффект вокруг логотипа
-local glow = Instance.new("ImageLabel")
-glow.Size = UDim2.new(1.4, 0, 1.4, 0)
-glow.Position = UDim2.new(-0.2, 0, -0.2, 0)
-glow.BackgroundTransparency = 1
-glow.Image = "rbxassetid://108226463288168"
-glow.ImageTransparency = 1
-glow.ImageColor3 = Color3.fromRGB(100, 150, 255)
-glow.ScaleType = Enum.ScaleType.Stretch
-glow.ZIndex = 2
-glow.Parent = decal
-
--- Текст "Cryo Hub"
-local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(1, 0, 0, 50)
-titleText.Position = UDim2.new(0, 0, 0, 290)
-titleText.BackgroundTransparency = 1
-titleText.Text = "Cryo Hub"
-titleText.Font = Enum.Font.GothamBlack
-titleText.TextSize = 42
-titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleText.TextTransparency = 1
-titleText.TextStrokeTransparency = 1
-titleText.TextStrokeColor3 = Color3.fromRGB(100, 150, 255)
-titleText.ZIndex = 3
-titleText.Parent = container
-
--- Текст "by Powder"
-local subText = Instance.new("TextLabel")
-subText.Size = UDim2.new(1, 0, 0, 30)
-subText.Position = UDim2.new(0, 0, 0, 340)
-subText.BackgroundTransparency = 1
-subText.Text = "by Powder"
-subText.Font = Enum.Font.GothamBold
-subText.TextSize = 22
-subText.TextColor3 = Color3.fromRGB(180, 180, 180)
-subText.TextTransparency = 1
-subText.ZIndex = 3
-subText.Parent = container
-
--- Полоса загрузки (прогресс бар)
-local barBg = Instance.new("Frame")
-barBg.Size = UDim2.new(0, 200, 0, 4)
-barBg.Position = UDim2.new(0.5, -100, 0, 380)
-barBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-barBg.BackgroundTransparency = 1
-barBg.BorderSizePixel = 0
-barBg.ZIndex = 3
-barBg.Parent = container
-
-local barFill = Instance.new("Frame")
-barFill.Size = UDim2.new(0, 0, 1, 0)
-barFill.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
-barFill.BackgroundTransparency = 1
-barFill.BorderSizePixel = 0
-barFill.ZIndex = 4
-barFill.Parent = barBg
-
--- ========== АНИМАЦИЯ ПОЯВЛЕНИЯ ==========
-
--- 1. Фон появляется
-TweenService:Create(bg, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    BackgroundTransparency = 0.3
-}):Play()
-
--- 2. Blur увеличивается
-TweenService:Create(blur, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    Size = 20
-}):Play()
-
-task.wait(0.3)
-
--- 3. Логотип плавно появляется (scale + fade)
-decal.Size = UDim2.new(0, 200, 0, 200)
-decal.Position = UDim2.new(0.5, -100, 0, 40)
-
-TweenService:Create(decal, TweenInfo.new(1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-    ImageTransparency = 0,
-    Size = UDim2.new(0, 280, 0, 280),
-    Position = UDim2.new(0.5, -140, 0, 0)
-}):Play()
-
-task.wait(0.2)
-
--- 4. Glow появляется
-TweenService:Create(glow, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    ImageTransparency = 0.7
-}):Play()
-
-task.wait(0.4)
-
--- 5. Текст появляется
-TweenService:Create(titleText, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    TextTransparency = 0,
-    TextStrokeTransparency = 0.8
-}):Play()
-
-task.wait(0.2)
-
-TweenService:Create(subText, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    TextTransparency = 0
-}):Play()
-
-task.wait(0.2)
-
--- 6. Прогресс бар
-TweenService:Create(barBg, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    BackgroundTransparency = 0
-}):Play()
-
-TweenService:Create(barFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    BackgroundTransparency = 0
-}):Play()
-
-task.wait(0.3)
-
--- Анимация заполнения бара
-TweenService:Create(barFill, TweenInfo.new(1.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-    Size = UDim2.new(1, 0, 1, 0)
-}):Play()
-
-task.wait(2)
-
--- ========== АНИМАЦИЯ ИСЧЕЗНОВЕНИЯ ==========
-
--- Текст исчезает
-TweenService:Create(subText, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-    TextTransparency = 1
-}):Play()
-
-TweenService:Create(titleText, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-    TextTransparency = 1,
-    TextStrokeTransparency = 1
-}):Play()
-
-TweenService:Create(barBg, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-    BackgroundTransparency = 1
-}):Play()
-
-TweenService:Create(barFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-    BackgroundTransparency = 1
-}):Play()
-
-task.wait(0.2)
-
--- Логотип улетает вверх
-TweenService:Create(decal, TweenInfo.new(0.8, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-    ImageTransparency = 1,
-    Position = UDim2.new(0.5, -140, 0, -100)
-}):Play()
-
-TweenService:Create(glow, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-    ImageTransparency = 1
-}):Play()
-
-task.wait(0.3)
-
--- Фон исчезает
-TweenService:Create(bg, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-    BackgroundTransparency = 1
-}):Play()
-
--- Blur убирается
-TweenService:Create(blur, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-    Size = 0
-}):Play()
-
-task.wait(1)
-
--- Чистим
-blur:Destroy()
-splashGui:Destroy()
-
--- ==================== НОВЫЙ GUI (КАК У KEY SYSTEM) ====================
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
 
--- Список всех категорий индекса
 local indexCategories = {"basic", "big", "huge", "shiny", "inverted"}
 
--- ==================== DataService ====================
 local DataService = nil
 pcall(function()
     DataService = require(ReplicatedStorage.Packages.DataService).client
@@ -237,7 +17,6 @@ if not DataService then
     DataService = { get = function(key) return 1 end }
 end
 
--- ==================== REMOTE FUNCTION ====================
 local function safeFindRemote(path)
     local current = ReplicatedStorage
     for _, name in ipairs(path) do
@@ -267,7 +46,6 @@ local inventoryRF = safeFindRemote({
     "Packages", "_Index", "leifstout_networker@0.3.1", "networker", "_remotes", "InventoryService", "RemoteFunction"
 })
 
--- ==================== ПЕРЕМЕННЫЕ СОСТОЯНИЯ ====================
 local states = {
     autoCollect = false,
     collectRadius = 50,
@@ -282,7 +60,6 @@ local states = {
     walkSpeedValue = 32,
 }
 
--- ==================== АНТИ АФК ====================
 local antiAfkConnection = nil
 local function startAntiAfk()
     if antiAfkConnection then return end
@@ -298,7 +75,6 @@ local function stopAntiAfk()
     end
 end
 
--- ==================== SPEED HACK ====================
 local speedHackConnection = nil
 local function setWalkSpeed(speed)
     local char = LocalPlayer.Character
@@ -324,7 +100,6 @@ local function stopSpeedHack()
     setWalkSpeed(16)
 end
 
--- ==================== AUTO COLLECT ====================
 local function getHRP()
     local char = LocalPlayer.Character
     return char and char:FindFirstChild("HumanoidRootPart")
@@ -374,19 +149,15 @@ local function collectAllInRange()
     end
 end
 
--- ==================== AUTO ROLL ====================
 local function doRoll()
     if rollRE then pcall(function() rollRE:FireServer("requestRoll") end) end
 end
 
--- ==================== AUTO REBIRTH ====================
 local function doRebirth()
     if rebirthRF then pcall(function() rebirthRF:InvokeServer("requestRebirth") end) end
 end
 
--- ==================== AUTO ZONE (ИСПРАВЛЕННАЯ) ====================
 local lastZone = 1
-local zoneCheckConnection = nil
 
 local function getMaxZone()
     local success, result = pcall(function()
@@ -411,7 +182,6 @@ local function doBuyZone()
     return success
 end
 
--- Телепорт вверх и вперёд на 300 шагов
 local function smartTeleport()
     local hrp = getHRP()
     if not hrp then return end
@@ -421,29 +191,26 @@ local function smartTeleport()
     hrp.CFrame = CFrame.new(newPos)
 end
 
--- ==================== AUTO CLAIM INDEX ====================
 local function claimIndexReward(category)
     if indexRF then pcall(function() indexRF:InvokeServer("requestClaimReward", category) end) end
 end
 
--- ==================== AUTO EQUIP BEST ====================
 local function doEquipBest()
     if inventoryRF then pcall(function() inventoryRF:InvokeServer("requestEquipBest") end) end
 end
 
--- ==================== СОЗДАНИЕ НОВОГО GUI ====================
 local gui = Instance.new("ScreenGui")
 gui.Name = "CryoHubGUI"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = PlayerGui
 
--- Blur для GUI
 local guiBlur = Instance.new("BlurEffect")
 guiBlur.Size = 0
 guiBlur.Parent = game:GetService("Lighting")
 
--- Основная панель (можно двигать)
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
 local mainPanel = Instance.new("Frame")
 mainPanel.Size = UDim2.new(0, 420, 0, 520)
 mainPanel.Position = UDim2.new(0.5, -210, 0.5, -260)
@@ -452,6 +219,7 @@ mainPanel.BackgroundTransparency = 0
 mainPanel.BorderSizePixel = 0
 mainPanel.Active = true
 mainPanel.Draggable = true
+mainPanel.Visible = false
 mainPanel.Parent = gui
 
 local mainCorner = Instance.new("UICorner")
@@ -463,7 +231,6 @@ mainStroke.Color = Color3.fromRGB(60, 60, 80)
 mainStroke.Thickness = 1.5
 mainStroke.Parent = mainPanel
 
--- Заголовок
 local header = Instance.new("Frame")
 header.Size = UDim2.new(1, 0, 0, 50)
 header.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
@@ -475,7 +242,6 @@ local headerCorner = Instance.new("UICorner")
 headerCorner.CornerRadius = UDim.new(0, 12)
 headerCorner.Parent = header
 
--- Fix corners
 local headerFix = Instance.new("Frame")
 headerFix.Size = UDim2.new(1, 0, 0, 10)
 headerFix.Position = UDim2.new(0, 0, 1, -10)
@@ -483,7 +249,6 @@ headerFix.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 headerFix.BorderSizePixel = 0
 headerFix.Parent = header
 
--- Логотип в заголовке
 local headerLogo = Instance.new("ImageLabel")
 headerLogo.Size = UDim2.new(0, 32, 0, 32)
 headerLogo.Position = UDim2.new(0, 12, 0, 9)
@@ -492,7 +257,6 @@ headerLogo.Image = "rbxassetid://119085437225835"
 headerLogo.ScaleType = Enum.ScaleType.Fit
 headerLogo.Parent = header
 
--- Текст заголовка
 local headerTitle = Instance.new("TextLabel")
 headerTitle.Size = UDim2.new(0, 200, 0, 30)
 headerTitle.Position = UDim2.new(0, 50, 0, 10)
@@ -504,7 +268,6 @@ headerTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
 headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 headerTitle.Parent = header
 
--- Кнопка закрытия
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
 closeBtn.Position = UDim2.new(1, -40, 0, 10)
@@ -515,7 +278,6 @@ closeBtn.TextSize = 24
 closeBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 closeBtn.Parent = header
 
--- Кнопка сворачивания
 local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
 minimizeBtn.Position = UDim2.new(1, -75, 0, 10)
@@ -526,7 +288,6 @@ minimizeBtn.TextSize = 24
 minimizeBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
 minimizeBtn.Parent = header
 
--- Контейнер вкладок
 local tabContainer = Instance.new("Frame")
 tabContainer.Size = UDim2.new(0, 100, 1, -50)
 tabContainer.Position = UDim2.new(0, 0, 0, 50)
@@ -535,11 +296,6 @@ tabContainer.BackgroundTransparency = 0
 tabContainer.BorderSizePixel = 0
 tabContainer.Parent = mainPanel
 
-local tabCorner = Instance.new("UICorner")
-tabCorner.CornerRadius = UDim.new(0, 0)
-tabCorner.Parent = tabContainer
-
--- Fix tab corners
 local tabFix = Instance.new("Frame")
 tabFix.Size = UDim2.new(0, 10, 1, 0)
 tabFix.Position = UDim2.new(1, -10, 0, 0)
@@ -547,7 +303,6 @@ tabFix.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
 tabFix.BorderSizePixel = 0
 tabFix.Parent = tabContainer
 
--- Контент область
 local contentArea = Instance.new("Frame")
 contentArea.Size = UDim2.new(1, -100, 1, -50)
 contentArea.Position = UDim2.new(0, 100, 0, 50)
@@ -555,7 +310,6 @@ contentArea.BackgroundTransparency = 1
 contentArea.BorderSizePixel = 0
 contentArea.Parent = mainPanel
 
--- Скролл контейнер
 local scrollFrame = Instance.new("ScrollingFrame")
 scrollFrame.Size = UDim2.new(1, -20, 1, -20)
 scrollFrame.Position = UDim2.new(0, 10, 0, 10)
@@ -574,8 +328,6 @@ scrollLayout.Parent = scrollFrame
 scrollLayout.Changed:Connect(function()
     scrollFrame.CanvasSize = UDim2.new(0, 0, 0, scrollLayout.AbsoluteContentSize.Y + 20)
 end)
-
--- ==================== ФУНКЦИИ СОЗДАНИЯ ЭЛЕМЕНТОВ ====================
 
 local function createSection(text)
     local section = Instance.new("TextLabel")
@@ -615,7 +367,6 @@ local function createToggle(text, stateKey, callback)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
-    -- Toggle switch
     local toggleBg = Instance.new("Frame")
     toggleBg.Size = UDim2.new(0, 44, 0, 24)
     toggleBg.Position = UDim2.new(1, -56, 0.5, -12)
@@ -655,7 +406,6 @@ local function createToggle(text, stateKey, callback)
     btn.MouseButton1Click:Connect(function()
         states[stateKey] = not states[stateKey]
         
-        -- Анимация переключения
         TweenService:Create(toggleBg, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundColor3 = states[stateKey] and Color3.fromRGB(100, 150, 255) or Color3.fromRGB(50, 50, 55)
         }):Play()
@@ -696,7 +446,6 @@ local function createSlider(text, stateKey, min, max, callback)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
     
-    -- Slider track
     local track = Instance.new("Frame")
     track.Size = UDim2.new(1, -30, 0, 6)
     track.Position = UDim2.new(0, 15, 0, 38)
@@ -708,7 +457,6 @@ local function createSlider(text, stateKey, min, max, callback)
     trackCorner.CornerRadius = UDim.new(1, 0)
     trackCorner.Parent = track
     
-    -- Fill
     local fill = Instance.new("Frame")
     local percent = (states[stateKey] - min) / (max - min)
     fill.Size = UDim2.new(percent, 0, 1, 0)
@@ -720,7 +468,6 @@ local function createSlider(text, stateKey, min, max, callback)
     fillCorner.CornerRadius = UDim.new(1, 0)
     fillCorner.Parent = fill
     
-    -- Handle
     local handle = Instance.new("Frame")
     handle.Size = UDim2.new(0, 14, 0, 14)
     handle.Position = UDim2.new(percent, -7, 0.5, -7)
@@ -732,7 +479,6 @@ local function createSlider(text, stateKey, min, max, callback)
     handleCorner.CornerRadius = UDim.new(1, 0)
     handleCorner.Parent = handle
     
-    -- Input handling
     local dragging = false
     
     local function updateSlider(inputX)
@@ -759,13 +505,13 @@ local function createSlider(text, stateKey, min, max, callback)
         end
     end)
     
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
+    UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             updateSlider(input.Position.X)
         end
     end)
     
-    game:GetService("UserInputService").InputEnded:Connect(function(input)
+    UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
@@ -833,11 +579,10 @@ local function createLabel(text)
     return label
 end
 
--- ==================== ВКЛАДКИ ====================
 local tabs = {}
 local currentTab = nil
 
-local function createTab(name, icon)
+local function createTab(name)
     local tabBtn = Instance.new("TextButton")
     tabBtn.Size = UDim2.new(1, 0, 0, 40)
     tabBtn.Position = UDim2.new(0, 0, 0, #tabs * 42)
@@ -870,32 +615,29 @@ local function createTab(name, icon)
         end
     end)
     
-    tabBtn.MouseButton1Click:Connect(function()
-        -- Сбросить все вкладки
-        for _, t in ipairs(tabs) do
-            TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
-            TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
-        end
-        
-        -- Активировать текущую
-        currentTab = name
-        TweenService:Create(tabBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-        TweenService:Create(indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
-        
-        -- Очистить контент
-        for _, child in ipairs(scrollFrame:GetChildren()) do
-            if child:IsA("GuiObject") and child ~= scrollLayout then
-                child:Destroy()
-            end
-        end
-        
-        -- Заполнить контент (вызовется извне)
-    end)
-    
-    return tabBtn
+    return tabBtn, indicator
 end
 
--- ==================== ЗАПОЛНЕНИЕ ВКЛАДОК ====================
+local function clearContent()
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("GuiObject") and child ~= scrollLayout then
+            child:Destroy()
+        end
+    end
+end
+
+local function activateTab(tabData)
+    for _, t in ipairs(tabs) do
+        TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+        TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+    end
+    
+    currentTab = tabData.name
+    TweenService:Create(tabData.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+    TweenService:Create(tabData.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+    
+    clearContent()
+end
 
 local function fillAutoTab()
     createSection("Auto Collect")
@@ -1007,82 +749,35 @@ local function fillCreditsTab()
     createLabel("Thanks For Using My Script!")
 end
 
--- ==================== ИНИЦИАЛИЗАЦИЯ ВКЛАДОК ====================
+local autoTabBtn, autoIndicator = createTab("Auto")
+local miscTabBtn, miscIndicator = createTab("Misc")
+local creditsTabBtn, creditsIndicator = createTab("Credits")
 
-local autoTab = createTab("Auto")
-local miscTab = createTab("Misc")
-local creditsTab = createTab("Credits")
+local autoTabData = {btn = autoTabBtn, indicator = autoIndicator, name = "Auto"}
+local miscTabData = {btn = miscTabBtn, indicator = miscIndicator, name = "Misc"}
+local creditsTabData = {btn = creditsTabBtn, indicator = creditsIndicator, name = "Credits"}
 
--- ИСПРАВЛЕНО: Вместо Fire() используем прямой вызов функций
-local function switchToAuto()
-    -- Сбросить все вкладки
-    for _, t in ipairs(tabs) do
-        TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
-        TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
-    end
-    
-    -- Активировать Auto
-    currentTab = "Auto"
-    TweenService:Create(autoTab, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-    TweenService:Create(tabs[1].indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
-    
-    -- Очистить контент
-    for _, child in ipairs(scrollFrame:GetChildren()) do
-        if child:IsA("GuiObject") and child ~= scrollLayout then
-            child:Destroy()
-        end
-    end
-    
+tabs[1] = autoTabData
+tabs[2] = miscTabData
+tabs[3] = creditsTabData
+
+autoTabBtn.MouseButton1Click:Connect(function()
+    activateTab(autoTabData)
     fillAutoTab()
-end
+end)
 
-local function switchToMisc()
-    for _, t in ipairs(tabs) do
-        TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
-        TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
-    end
-    
-    currentTab = "Misc"
-    TweenService:Create(miscTab, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-    TweenService:Create(tabs[2].indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
-    
-    for _, child in ipairs(scrollFrame:GetChildren()) do
-        if child:IsA("GuiObject") and child ~= scrollLayout then
-            child:Destroy()
-        end
-    end
-    
+miscTabBtn.MouseButton1Click:Connect(function()
+    activateTab(miscTabData)
     fillMiscTab()
-end
+end)
 
-local function switchToCredits()
-    for _, t in ipairs(tabs) do
-        TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
-        TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
-    end
-    
-    currentTab = "Credits"
-    TweenService:Create(creditsTab, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-    TweenService:Create(tabs[3].indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
-    
-    for _, child in ipairs(scrollFrame:GetChildren()) do
-        if child:IsA("GuiObject") and child ~= scrollLayout then
-            child:Destroy()
-        end
-    end
-    
+creditsTabBtn.MouseButton1Click:Connect(function()
+    activateTab(creditsTabData)
     fillCreditsTab()
-end
+end)
 
--- Переключение вкладок
-autoTab.MouseButton1Click:Connect(switchToAuto)
-miscTab.MouseButton1Click:Connect(switchToMisc)
-creditsTab.MouseButton1Click:Connect(switchToCredits)
-
--- По умолчанию открываем Auto
-switchToAuto()
-
--- ==================== КНОПКИ ЗАГОЛОВКА ====================
+activateTab(autoTabData)
+fillAutoTab()
 
 closeBtn.MouseEnter:Connect(function()
     TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 80, 80)}):Play()
@@ -1099,8 +794,7 @@ closeBtn.MouseButton1Click:Connect(function()
     }):Play()
     TweenService:Create(guiBlur, TweenInfo.new(0.3), {Size = 0}):Play()
     task.wait(0.3)
-    gui:Destroy()
-    guiBlur:Destroy()
+    gui.Enabled = false
 end)
 
 minimizeBtn.MouseEnter:Connect(function()
@@ -1123,29 +817,85 @@ minimizeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- ==================== АВТО ПОКУПКА ЗОН (ИСПРАВЛЕННАЯ) ====================
+local floatingBtn = Instance.new("ImageButton")
+floatingBtn.Name = "CryoHubFloat"
+floatingBtn.Size = UDim2.new(0, 55, 0, 55)
+floatingBtn.Position = UDim2.new(0, 20, 0.5, -27)
+floatingBtn.BackgroundTransparency = 1
+floatingBtn.Image = "rbxassetid://9751678226"
+floatingBtn.ImageColor3 = Color3.fromRGB(255, 255, 255)
+floatingBtn.ScaleType = Enum.ScaleType.Fit
+floatingBtn.Active = true
+floatingBtn.Draggable = true
+floatingBtn.Parent = gui
 
--- Запускаем фоновый процесс покупки зон
+local floatCorner = Instance.new("UICorner")
+floatCorner.CornerRadius = UDim.new(1, 0)
+floatCorner.Parent = floatingBtn
+
+local floatStroke = Instance.new("UIStroke")
+floatStroke.Color = Color3.fromRGB(100, 150, 255)
+floatStroke.Thickness = 2
+floatStroke.Parent = floatingBtn
+
+local floatGlow = Instance.new("ImageLabel")
+floatGlow.Size = UDim2.new(1.4, 0, 1.4, 0)
+floatGlow.Position = UDim2.new(-0.2, 0, -0.2, 0)
+floatGlow.BackgroundTransparency = 1
+floatGlow.Image = "rbxassetid://108226463288168"
+floatGlow.ImageTransparency = 0.7
+floatGlow.ImageColor3 = Color3.fromRGB(100, 150, 255)
+floatGlow.ZIndex = -1
+floatGlow.Parent = floatingBtn
+
+local isOpen = false
+
+local function toggleGui()
+    isOpen = not isOpen
+    if isOpen then
+        guiBlur.Size = 15
+        mainPanel.Visible = true
+        mainPanel.Size = UDim2.new(0, 0, 0, 0)
+        mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
+        TweenService:Create(mainPanel, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(0, 420, 0, 520),
+            Position = UDim2.new(0.5, -210, 0.5, -260)
+        }):Play()
+    else
+        TweenService:Create(mainPanel, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 0, 0, 0),
+            Position = UDim2.new(0.5, 0, 0.5, 0)
+        }):Play()
+        task.wait(0.3)
+        mainPanel.Visible = false
+        guiBlur.Size = 0
+    end
+end
+
+floatingBtn.MouseButton1Click:Connect(toggleGui)
+
+if not isMobile then
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == Enum.KeyCode.K then
+            toggleGui()
+        end
+    end)
+end
+
 task.spawn(function()
     while true do
-        -- Проверяем, что игрок в игре
         if LocalPlayer and LocalPlayer.Character then
             local currentZone = getMaxZone()
             local success = doBuyZone()
             
-            -- Если зона изменилась — телепортируемся вверх и вперёд
             if currentZone > lastZone then
                 lastZone = currentZone
                 task.wait(0.5)
                 smartTeleport()
             end
         end
-        
         task.wait(0.5)
     end
 end)
 
--- ==================== BLUR ПРИ ОТКРЫТИИ ====================
-TweenService:Create(guiBlur, TweenInfo.new(0.5), {Size = 15}):Play()
-
-print("✅ Cryo Hub loaded by Powder! | New GUI v2.0")
+print("Cryo Hub loaded by Powder!")
