@@ -182,15 +182,6 @@ local function doBuyZone()
     return success
 end
 
-local function smartTeleport()
-    local hrp = getHRP()
-    if not hrp then return end
-    local lookVector = hrp.CFrame.LookVector
-    lookVector = Vector3.new(lookVector.X, 0, lookVector.Z).Unit
-    local newPos = hrp.Position + Vector3.new(0, 50, 0) + (lookVector * 300)
-    hrp.CFrame = CFrame.new(newPos)
-end
-
 local function claimIndexReward(category)
     if indexRF then pcall(function() indexRF:InvokeServer("requestClaimReward", category) end) end
 end
@@ -204,10 +195,6 @@ gui.Name = "CryoHubGUI"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = PlayerGui
-
-local guiBlur = Instance.new("BlurEffect")
-guiBlur.Size = 0
-guiBlur.Parent = game:GetService("Lighting")
 
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
@@ -253,7 +240,7 @@ local headerLogo = Instance.new("ImageLabel")
 headerLogo.Size = UDim2.new(0, 32, 0, 32)
 headerLogo.Position = UDim2.new(0, 12, 0, 9)
 headerLogo.BackgroundTransparency = 1
-headerLogo.Image = "rbxassetid://119085437225835"
+headerLogo.Image = "rbxassetid://75309286909772"
 headerLogo.ScaleType = Enum.ScaleType.Fit
 headerLogo.Parent = header
 
@@ -732,9 +719,9 @@ local function fillMiscTab()
 end
 
 local function fillCreditsTab()
-    createLabel("")
-    createLabel("UI: Tora")
     createLabel("Creator: Powder")
+    createLabel("UI: Lu4ikk1")
+    createLabel("")
     createLabel("")
     createLabel("Thanks For Using My Script!")
 end
@@ -782,9 +769,10 @@ closeBtn.MouseButton1Click:Connect(function()
         Size = UDim2.new(0, 0, 0, 0),
         Position = UDim2.new(0.5, 0, 0.5, 0)
     }):Play()
-    TweenService:Create(guiBlur, TweenInfo.new(0.3), {Size = 0}):Play()
     task.wait(0.3)
-    gui.Enabled = false
+    mainPanel.Visible = false
+    mainPanel.Size = UDim2.new(0, 420, 0, 520)
+    mainPanel.Position = UDim2.new(0.5, -210, 0.5, -260)
 end)
 
 minimizeBtn.MouseEnter:Connect(function()
@@ -843,7 +831,6 @@ local isOpen = false
 local function toggleGui()
     isOpen = not isOpen
     if isOpen then
-        guiBlur.Size = 15
         mainPanel.Visible = true
         mainPanel.Size = UDim2.new(0, 0, 0, 0)
         mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -858,7 +845,8 @@ local function toggleGui()
         }):Play()
         task.wait(0.3)
         mainPanel.Visible = false
-        guiBlur.Size = 0
+        mainPanel.Size = UDim2.new(0, 420, 0, 520)
+        mainPanel.Position = UDim2.new(0.5, -210, 0.5, -260)
     end
 end
 
@@ -875,14 +863,7 @@ end
 task.spawn(function()
     while true do
         if LocalPlayer and LocalPlayer.Character then
-            local currentZone = getMaxZone()
-            local success = doBuyZone()
-            
-            if currentZone > lastZone then
-                lastZone = currentZone
-                task.wait(0.5)
-                smartTeleport()
-            end
+            doBuyZone()
         end
         task.wait(0.5)
     end
