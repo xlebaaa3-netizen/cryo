@@ -171,10 +171,7 @@ local function teleportToZone()
 end
 
 local function doBuyZone()
-    if not zonesRF then
-        warn("[Cryo Hub] ZonesRF not found!")
-        return false
-    end
+    if not zonesRF then return false end
     local success = pcall(function()
         zonesRF:InvokeServer("requestPurchaseZone")
     end)
@@ -204,7 +201,7 @@ mainPanel.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainPanel.BackgroundTransparency = 0
 mainPanel.BorderSizePixel = 0
 mainPanel.Active = true
-mainPanel.Draggable = true
+mainPanel.Draggable = false  -- Отключаем стандартный Draggable
 mainPanel.Visible = false
 mainPanel.Parent = gui
 
@@ -234,6 +231,39 @@ headerFix.Position = UDim2.new(0, 0, 1, -10)
 headerFix.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 headerFix.BorderSizePixel = 0
 headerFix.Parent = header
+
+-- Перемещение только за заголовок
+local draggingConnections = {
+    start = nil,
+    update = nil,
+    end = nil,
+    dragging = false,
+    dragStart = nil,
+    startPos = nil
+}
+
+header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingConnections.dragging = true
+        draggingConnections.dragStart = input.Position
+        draggingConnections.startPos = mainPanel.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if draggingConnections.dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - draggingConnections.dragStart
+        local newX = draggingConnections.startPos.X.Offset + delta.X
+        local newY = draggingConnections.startPos.Y.Offset + delta.Y
+        mainPanel.Position = UDim2.new(0, newX, 0, newY)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingConnections.dragging = false
+    end
+end)
 
 local headerLogo = Instance.new("ImageLabel")
 headerLogo.Size = UDim2.new(0, 32, 0, 32)
@@ -667,6 +697,7 @@ local function fillAutoTab()
     
     createSection("Auto Zone")
     createToggle("Auto Buy New Zone", "autoBuyNewZone", function(s)
+        -- callback уже в основном цикле
     end)
     
     createSection("Auto Index")
@@ -778,10 +809,14 @@ local minimized = false
 minimizeBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     if minimized then
+        -- Сворачиваем - скрываем всё содержимое
         TweenService:Create(contentArea, TweenInfo.new(0.3), {Size = UDim2.new(1, -100, 0, 0)}):Play()
+        TweenService:Create(tabContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 100, 0, 0)}):Play()
         TweenService:Create(mainPanel, TweenInfo.new(0.3), {Size = UDim2.new(0, 420, 0, 50)}):Play()
     else
+        -- Разворачиваем - показываем всё обратно
         TweenService:Create(contentArea, TweenInfo.new(0.3), {Size = UDim2.new(1, -100, 1, -50)}):Play()
+        TweenService:Create(tabContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 100, 1, -50)}):Play()
         TweenService:Create(mainPanel, TweenInfo.new(0.3), {Size = UDim2.new(0, 420, 0, 520)}):Play()
     end
 end)
@@ -855,6 +890,10 @@ task.spawn(function()
     while true do
         if states.autoBuyNewZone and LocalPlayer and LocalPlayer.Character then
             doBuyZone()
+            if states.autoTeleportToNewZone then
+                task.wait(0.3)
+                teleportToZone()
+            end
         end
         task.wait(0.5)
     end
