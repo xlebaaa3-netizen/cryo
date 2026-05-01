@@ -52,6 +52,7 @@ local states = {
     autoRoll = false,
     autoRebirth = false,
     rebirthDelay = 15,
+    autoBuyNewZone = false,
     autoTeleportToNewZone = false,
     autoClaimIndex = false,
     autoEquipBest = false,
@@ -157,8 +158,6 @@ local function doRebirth()
     if rebirthRF then pcall(function() rebirthRF:InvokeServer("requestRebirth") end) end
 end
 
-local lastZone = 1
-
 local function getMaxZone()
     local success, result = pcall(function()
         return DataService:get("maxZone")
@@ -240,7 +239,7 @@ local headerLogo = Instance.new("ImageLabel")
 headerLogo.Size = UDim2.new(0, 32, 0, 32)
 headerLogo.Position = UDim2.new(0, 12, 0, 9)
 headerLogo.BackgroundTransparency = 1
-headerLogo.Image = "rbxassetid://75309286909772"
+headerLogo.Image = "rbxassetid://119085437225835"
 headerLogo.ScaleType = Enum.ScaleType.Fit
 headerLogo.Parent = header
 
@@ -485,21 +484,28 @@ local function createSlider(text, stateKey, min, max, callback)
         end
     end
     
-    track.InputBegan:Connect(function(input)
+    local function onInputBegan(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            updateSlider(input.Position.X)
+            local inputPos = input.Position.X
+            local trackStart = track.AbsolutePosition.X
+            local trackEnd = trackStart + track.AbsoluteSize.X
+            if inputPos >= trackStart and inputPos <= trackEnd then
+                dragging = true
+                updateSlider(inputPos)
+            end
         end
-    end)
+    end
+    
+    track.InputBegan:Connect(onInputBegan)
     
     UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             updateSlider(input.Position.X)
         end
     end)
     
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
@@ -660,15 +666,7 @@ local function fillAutoTab()
     end)
     
     createSection("Auto Zone")
-    createToggle("Auto Teleport Zone", "autoTeleportToNewZone", function(s)
-        if s then
-            task.spawn(function()
-                while states.autoTeleportToNewZone do
-                    teleportToZone()
-                    task.wait(0.5)
-                end
-            end)
-        end
+    createToggle("Auto Buy New Zone", "autoBuyNewZone", function(s)
     end)
     
     createSection("Auto Index")
@@ -719,9 +717,9 @@ local function fillMiscTab()
 end
 
 local function fillCreditsTab()
-    createLabel("Creator: Powder")
-    createLabel("UI: Lu4ikk1")
     createLabel("")
+    createLabel("UI: Tora")
+    createLabel("Creator: Powder")
     createLabel("")
     createLabel("Thanks For Using My Script!")
 end
@@ -765,14 +763,7 @@ closeBtn.MouseLeave:Connect(function()
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(mainPanel, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0),
-        Position = UDim2.new(0.5, 0, 0.5, 0)
-    }):Play()
-    task.wait(0.3)
-    mainPanel.Visible = false
-    mainPanel.Size = UDim2.new(0, 420, 0, 520)
-    mainPanel.Position = UDim2.new(0.5, -210, 0.5, -260)
+    gui:Destroy()
 end)
 
 minimizeBtn.MouseEnter:Connect(function()
@@ -862,7 +853,7 @@ end
 
 task.spawn(function()
     while true do
-        if LocalPlayer and LocalPlayer.Character then
+        if states.autoBuyNewZone and LocalPlayer and LocalPlayer.Character then
             doBuyZone()
         end
         task.wait(0.5)
