@@ -46,6 +46,21 @@ local inventoryRF = safeFindRemote({
     "Packages", "_Index", "leifstout_networker@0.3.1", "networker", "_remotes", "InventoryService", "RemoteFunction"
 })
 
+-- ==================== УДАЛЕНИЕ AUTO REJOIN ====================
+local function removeAutoRejoin()
+    local autoRejoinService = ReplicatedStorage:FindFirstChild("Packages")
+        :FindFirstChild("_Index")
+        :FindFirstChild("leifstout_networker@0.3.1")
+        :FindFirstChild("networker")
+        :FindFirstChild("_remotes")
+        :FindFirstChild("AutoRejoinService")
+    
+    if autoRejoinService then
+        autoRejoinService:Destroy()
+        print("[Cryo Hub] AutoRejoinService deleted")
+    end
+end
+
 local states = {
     autoCollect = false,
     collectRadius = 50,
@@ -99,6 +114,90 @@ local function stopSpeedHack()
         speedHackConnection = nil
     end
     setWalkSpeed(16)
+end
+
+-- ==================== AUTO COLLECT RECIPE (простая версия) ====================
+local autoCollectRecipe = false
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+-- Функция для нажатия E
+local function pressE()
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    task.wait(0.05)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+-- Функция для сбора рецепта
+local function collectRecipe(targetPart, zoneNum)
+    local char = LocalPlayer.Character
+    if not char then return false end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    
+    -- Сохраняем позицию
+    local originalPos = hrp.CFrame
+    
+    -- Телепорт к рецепту
+    hrp.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+    task.wait(0.2)
+    
+    -- Нажатие E
+    pressE()
+    task.wait(0.2)
+    
+    -- Возврат
+    hrp.CFrame = originalPos
+    
+    print("✅ Собран рецепт на зоне", zoneNum)
+    return true
+end
+
+-- Поиск всех Recipe
+local function getAllRecipes()
+    local zonesFolder = workspace:FindFirstChild("Zones")
+    if not zonesFolder then return {} end
+    
+    local recipes = {}
+    
+    for zoneNum = 1, 25 do
+        local zone = zonesFolder:FindFirstChild(tostring(zoneNum))
+        if zone then
+            local recipe = zone:FindFirstChild("Recipe")
+            if recipe then
+                local meshPart = recipe:FindFirstChild("MeshPart") or recipe:FindFirstChild("Part") or recipe
+                if meshPart and meshPart:IsA("BasePart") then
+                    table.insert(recipes, {
+                        zone = zoneNum,
+                        part = meshPart
+                    })
+                end
+            end
+        end
+    end
+    
+    return recipes
+end
+
+-- Сбор всех рецептов
+local function collectAllRecipes()
+    local recipes = getAllRecipes()
+    if #recipes == 0 then return end
+    
+    for _, item in ipairs(recipes) do
+        collectRecipe(item.part, item.zone)
+        task.wait(0.5)
+    end
+end
+
+-- Авто-сбор в цикле
+local function startAutoCollectRecipe()
+    while autoCollectRecipe do
+        collectAllRecipes()
+        task.wait(15)
+    end
 end
 
 local function getHRP()
@@ -227,7 +326,7 @@ headerFix.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 headerFix.BorderSizePixel = 0
 headerFix.Parent = header
 
--- ==================== ПЕРЕМЕЩЕНИЕ (ФИНАЛЬНАЯ ВЕРСИЯ) ====================
+-- ==================== ПЕРЕМЕЩЕНИЕ ====================
 local isDragging = false
 local dragStartMouse = nil
 local dragStartFramePos = nil
@@ -243,10 +342,10 @@ end)
 UserInputService.InputChanged:Connect(function(input)
     if not isDragging then return end
     if input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch then return end
-    
+
     local delta = Vector2.new(input.Position.X, input.Position.Y) - dragStartMouse
     local newPos = dragStartFramePos + delta
-    
+
     mainPanel.Position = UDim2.new(0, newPos.X, 0, newPos.Y)
 end)
 
@@ -361,11 +460,11 @@ local function createToggle(text, stateKey, callback)
     frame.BorderSizePixel = 0
     frame.LayoutOrder = #scrollFrame:GetChildren()
     frame.Parent = scrollFrame
-    
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -60, 1, 0)
     label.Position = UDim2.new(0, 12, 0, 0)
@@ -376,59 +475,59 @@ local function createToggle(text, stateKey, callback)
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
-    
+
     local toggleBg = Instance.new("Frame")
     toggleBg.Size = UDim2.new(0, 44, 0, 24)
     toggleBg.Position = UDim2.new(1, -56, 0.5, -12)
     toggleBg.BackgroundColor3 = states[stateKey] and Color3.fromRGB(100, 150, 255) or Color3.fromRGB(50, 50, 55)
     toggleBg.BorderSizePixel = 0
     toggleBg.Parent = frame
-    
+
     local toggleCorner = Instance.new("UICorner")
     toggleCorner.CornerRadius = UDim.new(1, 0)
     toggleCorner.Parent = toggleBg
-    
+
     local toggleCircle = Instance.new("Frame")
     toggleCircle.Size = UDim2.new(0, 18, 0, 18)
     toggleCircle.Position = states[stateKey] and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
     toggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     toggleCircle.BorderSizePixel = 0
     toggleCircle.Parent = toggleBg
-    
+
     local circleCorner = Instance.new("UICorner")
     circleCorner.CornerRadius = UDim.new(1, 0)
     circleCorner.Parent = toggleCircle
-    
+
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, 0, 1, 0)
     btn.BackgroundTransparency = 1
     btn.Text = ""
     btn.Parent = frame
-    
+
     btn.MouseEnter:Connect(function()
         TweenService:Create(frame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 30, 35)}):Play()
     end)
-    
+
     btn.MouseLeave:Connect(function()
         TweenService:Create(frame, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(25, 25, 30)}):Play()
     end)
-    
+
     btn.MouseButton1Click:Connect(function()
         states[stateKey] = not states[stateKey]
-        
+
         TweenService:Create(toggleBg, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             BackgroundColor3 = states[stateKey] and Color3.fromRGB(100, 150, 255) or Color3.fromRGB(50, 50, 55)
         }):Play()
-        
+
         TweenService:Create(toggleCircle, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = states[stateKey] and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
         }):Play()
-        
+
         if callback then
             callback(states[stateKey])
         end
     end)
-    
+
     return frame
 end
 
@@ -440,11 +539,11 @@ local function createSlider(text, stateKey, min, max, callback)
     frame.BorderSizePixel = 0
     frame.LayoutOrder = #scrollFrame:GetChildren()
     frame.Parent = scrollFrame
-    
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = frame
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -20, 0, 20)
     label.Position = UDim2.new(0, 12, 0, 8)
@@ -455,59 +554,59 @@ local function createSlider(text, stateKey, min, max, callback)
     label.TextColor3 = Color3.fromRGB(255, 255, 255)
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = frame
-    
+
     local track = Instance.new("Frame")
     track.Size = UDim2.new(1, -30, 0, 6)
     track.Position = UDim2.new(0, 15, 0, 38)
     track.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
     track.BorderSizePixel = 0
     track.Parent = frame
-    
+
     local trackCorner = Instance.new("UICorner")
     trackCorner.CornerRadius = UDim.new(1, 0)
     trackCorner.Parent = track
-    
+
     local fill = Instance.new("Frame")
     local percent = (states[stateKey] - min) / (max - min)
     fill.Size = UDim2.new(percent, 0, 1, 0)
     fill.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
     fill.BorderSizePixel = 0
     fill.Parent = track
-    
+
     local fillCorner = Instance.new("UICorner")
     fillCorner.CornerRadius = UDim.new(1, 0)
     fillCorner.Parent = fill
-    
+
     local handle = Instance.new("Frame")
     handle.Size = UDim2.new(0, 14, 0, 14)
     handle.Position = UDim2.new(percent, -7, 0.5, -7)
     handle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     handle.BorderSizePixel = 0
     handle.Parent = track
-    
+
     local handleCorner = Instance.new("UICorner")
     handleCorner.CornerRadius = UDim.new(1, 0)
     handleCorner.Parent = handle
-    
+
     local dragging = false
-    
+
     local function updateSlider(inputX)
         local trackPos = track.AbsolutePosition.X
         local trackSize = track.AbsoluteSize.X
         local relativeX = math.clamp((inputX - trackPos) / trackSize, 0, 1)
         local value = math.floor(min + (relativeX * (max - min)))
-        
+
         states[stateKey] = value
         label.Text = text .. ": " .. value
-        
+
         fill.Size = UDim2.new(relativeX, 0, 1, 0)
         handle.Position = UDim2.new(relativeX, -7, 0.5, -7)
-        
+
         if callback then
             callback(value)
         end
     end
-    
+
     local function onInputBegan(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             local inputPos = input.Position.X
@@ -519,21 +618,21 @@ local function createSlider(text, stateKey, min, max, callback)
             end
         end
     end
-    
+
     track.InputBegan:Connect(onInputBegan)
-    
+
     UserInputService.InputChanged:Connect(function(input)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             updateSlider(input.Position.X)
         end
     end)
-    
+
     UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
         end
     end)
-    
+
     return frame
 end
 
@@ -549,26 +648,26 @@ local function createButton(text, callback)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.LayoutOrder = #scrollFrame:GetChildren()
     btn.Parent = scrollFrame
-    
+
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = btn
-    
+
     btn.MouseEnter:Connect(function()
         TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(120, 170, 255)}):Play()
     end)
-    
+
     btn.MouseLeave:Connect(function()
         TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(100, 150, 255)}):Play()
     end)
-    
+
     btn.MouseButton1Click:Connect(function()
         TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 130, 235)}):Play()
         task.wait(0.1)
         TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(120, 170, 255)}):Play()
         if callback then callback() end
     end)
-    
+
     return btn
 end
 
@@ -599,7 +698,7 @@ local function createTab(name)
     tabBtn.TextSize = 13
     tabBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
     tabBtn.Parent = tabContainer
-    
+
     local indicator = Instance.new("Frame")
     indicator.Size = UDim2.new(0, 3, 0, 20)
     indicator.Position = UDim2.new(0, 0, 0.5, -10)
@@ -607,21 +706,21 @@ local function createTab(name)
     indicator.BackgroundTransparency = 1
     indicator.BorderSizePixel = 0
     indicator.Parent = tabBtn
-    
+
     table.insert(tabs, {btn = tabBtn, indicator = indicator, name = name})
-    
+
     tabBtn.MouseEnter:Connect(function()
         if currentTab ~= name then
             TweenService:Create(tabBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(200, 200, 200)}):Play()
         end
     end)
-    
+
     tabBtn.MouseLeave:Connect(function()
         if currentTab ~= name then
             TweenService:Create(tabBtn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
         end
     end)
-    
+
     return tabBtn, indicator
 end
 
@@ -638,11 +737,11 @@ local function activateTab(tabData)
         TweenService:Create(t.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
         TweenService:Create(t.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
     end
-    
+
     currentTab = tabData.name
     TweenService:Create(tabData.btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
     TweenService:Create(tabData.indicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
-    
+
     clearContent()
 end
 
@@ -661,7 +760,7 @@ local function fillAutoTab()
     createSlider("Radius", "collectRadius", 10, 100, function(v)
         states.collectRadius = v
     end)
-    
+
     createSection("Auto Roll")
     createToggle("Auto Roll", "autoRoll", function(s)
         if s then
@@ -673,7 +772,7 @@ local function fillAutoTab()
             end)
         end
     end)
-    
+
     createSection("Auto Rebirth")
     createToggle("Auto Rebirth", "autoRebirth", function(s)
         if s then
@@ -688,10 +787,10 @@ local function fillAutoTab()
     createSlider("Rebirth Delay", "rebirthDelay", 5, 60, function(v)
         states.rebirthDelay = v
     end)
-    
+
     createSection("Auto Zone")
     createToggle("Auto Buy New Zone", "autoBuyNewZone", function(s) end)
-    
+
     createSection("Auto Index")
     createToggle("Auto Claim Index", "autoClaimIndex", function(s)
         if s then
@@ -706,7 +805,14 @@ local function fillAutoTab()
             end)
         end
     end)
-    
+createSection("Auto Recipe")
+createToggle("Auto Collect Recipe", "autoCollectRecipe", function(s)
+    autoCollectRecipe = s
+    if autoCollectRecipe then
+        task.spawn(startAutoCollectRecipe)
+    end
+end)
+
     createSection("Auto Equip")
     createToggle("Auto Equip Best", "autoEquipBest", function(s)
         if s then
@@ -723,7 +829,12 @@ end
 local function fillMiscTab()
     createSection("Player")
     createToggle("Anti AFK", "antiAFK", function(s)
-        if s then startAntiAfk() else stopAntiAfk() end
+        if s then 
+            startAntiAfk()
+            removeAutoRejoin()
+        else 
+            stopAntiAfk()
+        end
     end)
     createToggle("Speed Hack", "speedHackEnabled", function(s)
         if s then
@@ -740,11 +851,11 @@ local function fillMiscTab()
 end
 
 local function fillCreditsTab()
-    createLabel("")
-    createLabel("UI: Tora")
-    createLabel("Creator: Powder")
-    createLabel("")
+    createLabel("Creator:Powder")
+    createLabel("UI:Lu4ikk1")
     createLabel("Thanks For Using My Script!")
+    createLabel("")
+    createLabel("")
 end
 
 local autoTabBtn, autoIndicator = createTab("Auto")
