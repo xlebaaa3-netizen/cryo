@@ -34,6 +34,10 @@ local rollRE = safeFindRemote({
     "Packages", "_Index", "leifstout_networker@0.3.1", "networker", "_remotes", "RollService", "RemoteEvent"
 })
 
+local codeRF = safeFindRemote({
+    "Packages", "_Index", "leifstout_networker@0.3.1", "networker", "_remotes", "CodeService", "RemoteFunction"
+})
+
 local rebirthRF = safeFindRemote({
     "Packages", "_Index", "leifstout_networker@0.3.1", "networker", "_remotes", "RebirthService", "RemoteFunction"
 })
@@ -59,6 +63,48 @@ local function removeAutoRejoin()
         autoRejoinService:Destroy()
         print("[Cryo Hub] AutoRejoinService deleted")
     end
+end
+
+-- ==================== REDEEM ALL CODES ====================
+local codeRF = ReplicatedStorage:FindFirstChild("Packages")
+    :FindFirstChild("_Index")
+    :FindFirstChild("leifstout_networker@0.3.1")
+    :FindFirstChild("networker")
+    :FindFirstChild("_remotes")
+    :FindFirstChild("CodeService")
+    :FindFirstChild("RemoteFunction")
+
+-- Список кодов
+local codes = {"2muchluck", "test", "gullible"}
+
+-- Функция для активации одного кода
+local function redeemCode(code)
+    if not codeRF then 
+        print("❌ Code RemoteFunction не найден")
+        return false
+    end
+    
+    local success, result = pcall(function()
+        return codeRF:InvokeServer("redeem", code)
+    end)
+    
+    if success then
+        print("✅ Код", code, "- успешно активирован!")
+        return true
+    else
+        print("❌ Код", code, "- ошибка:", result)
+        return false
+    end
+end
+
+-- Функция для активации всех кодов
+local function redeemAllCodes()
+    print("🔄 Начинаю активацию всех кодов...")
+    for _, code in ipairs(codes) do
+        redeemCode(code)
+        task.wait(0.5) -- задержка между кодами
+    end
+    print("✅ Активация всех кодов завершена!")
 end
 
 local states = {
@@ -848,6 +894,9 @@ local function fillMiscTab()
         states.walkSpeedValue = v
         if states.speedHackEnabled then setWalkSpeed(v) end
     end)
+    
+    createSection("Codes")
+    createButton("Redeem All Codes", redeemAllCodes)
 end
 
 local function fillCreditsTab()
