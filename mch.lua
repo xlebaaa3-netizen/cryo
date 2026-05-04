@@ -70,14 +70,10 @@ mainTab:CreateToggle("Auto Collect", function(state)
             local lootFolder = workspace:FindFirstChild("Loot")
             
             if hrp and lootFolder then
-                -- Проходим по каждой модели в папке Loot
                 for _, lootObject in ipairs(lootFolder:GetChildren()) do
                     if not states.autoCollect then break end
                     
-                    -- Ищем MeshPart или BasePart с TouchInterest внутри объекта
                     local touchPart = nil
-                    
-                    -- Сначала ищем прямой MeshPart/BasePart с TouchInterest
                     for _, child in ipairs(lootObject:GetChildren()) do
                         if (child:IsA("MeshPart") or child:IsA("BasePart")) and child:FindFirstChild("TouchInterest") then
                             touchPart = child
@@ -85,7 +81,6 @@ mainTab:CreateToggle("Auto Collect", function(state)
                         end
                     end
                     
-                    -- Если не нашли, ищем глубже (на случай вложенности)
                     if not touchPart then
                         local function findTouchPart(parent)
                             for _, child in ipairs(parent:GetChildren()) do
@@ -102,7 +97,6 @@ mainTab:CreateToggle("Auto Collect", function(state)
                         touchPart = findTouchPart(lootObject)
                     end
                     
-                    -- Если нашли часть с TouchInterest - собираем
                     if touchPart then
                         local distance = (hrp.Position - touchPart.Position).Magnitude
                         if distance <= states.collectRadius then
@@ -228,16 +222,67 @@ miscTab:CreateSlider("WalkSpeed", 32, 300, states.walkSpeedValue, function(value
     states.walkSpeedValue = value
 end)
 
-miscTab:CreateToggle("Anti Afk", function(state)
-    states.antiAFK = state
-    if state and not _G.AntiAfkActive then
-        _G.AntiAfkActive = true
-        game:GetService("Players").LocalPlayer.Idled:Connect(function()
-            if states.antiAFK then
-                game:GetService("VirtualUser"):CaptureController()
-                game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+-- [[ ANTI AFK С БЛОКИРОВКОЙ AUTO REJOIN ]]
+local AntiAfkService = {
+    Active = false,
+    Connection = nil
+}
+
+local function removeAutoRejoin()
+    local autoRejoinPaths = {
+        {"Source", "Features", "AutoRejoin"},
+        {"Source", "Features", "AutoRejoinService"},
+        {"Features", "AutoRejoin"},
+        {"AutoRejoin"},
+    }
+    
+    for _, path in ipairs(autoRejoinPaths) do
+        local current = ReplicatedStorage
+        local found = true
+        for _, name in ipairs(path) do
+            current = current:FindFirstChild(name)
+            if not current then
+                found = false
+                break
             end
-        end)
+        end
+        if found and current then
+            current:Destroy()
+            return
+        end
+    end
+end
+
+local function startAntiAfk()
+    if AntiAfkService.Active then return end
+    
+    removeAutoRejoin()
+    
+    AntiAfkService.Active = true
+    AntiAfkService.Connection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
+        if AntiAfkService.Active then
+            local VirtualUser = game:GetService("VirtualUser")
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end
+    end)
+end
+
+local function stopAntiAfk()
+    if not AntiAfkService.Active then return end
+    
+    AntiAfkService.Active = false
+    if AntiAfkService.Connection then
+        AntiAfkService.Connection:Disconnect()
+        AntiAfkService.Connection = nil
+    end
+end
+
+miscTab:CreateToggle("Anti Afk", function(state)
+    if state then
+        startAntiAfk()
+    else
+        stopAntiAfk()
     end
 end)
 
