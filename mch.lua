@@ -67,17 +67,51 @@ mainTab:CreateToggle("Auto Collect", function(state)
             local player = game:GetService("Players").LocalPlayer
             local char = player.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            local loot = workspace:FindFirstChild("Loot")
+            local lootFolder = workspace:FindFirstChild("Loot")
             
-            if hrp and loot then
-                for _, obj in ipairs(loot:GetChildren()) do
+            if hrp and lootFolder then
+                -- Проходим по каждой модели в папке Loot
+                for _, lootObject in ipairs(lootFolder:GetChildren()) do
                     if not states.autoCollect then break end
-                    local part = obj:IsA("BasePart") and obj or obj:FindFirstChildOfClass("BasePart")
-                    if part and part:FindFirstChild("TouchInterest") then
-                        if (hrp.Position - part.Position).Magnitude <= states.collectRadius then
-                            firetouchinterest(hrp, part, 0)
-                            task.wait()
-                            firetouchinterest(hrp, part, 1)
+                    
+                    -- Ищем MeshPart или BasePart с TouchInterest внутри объекта
+                    local touchPart = nil
+                    
+                    -- Сначала ищем прямой MeshPart/BasePart с TouchInterest
+                    for _, child in ipairs(lootObject:GetChildren()) do
+                        if (child:IsA("MeshPart") or child:IsA("BasePart")) and child:FindFirstChild("TouchInterest") then
+                            touchPart = child
+                            break
+                        end
+                    end
+                    
+                    -- Если не нашли, ищем глубже (на случай вложенности)
+                    if not touchPart then
+                        local function findTouchPart(parent)
+                            for _, child in ipairs(parent:GetChildren()) do
+                                if (child:IsA("MeshPart") or child:IsA("BasePart")) and child:FindFirstChild("TouchInterest") then
+                                    return child
+                                end
+                                if child:IsA("Model") or child:IsA("Folder") then
+                                    local found = findTouchPart(child)
+                                    if found then return found end
+                                end
+                            end
+                            return nil
+                        end
+                        touchPart = findTouchPart(lootObject)
+                    end
+                    
+                    -- Если нашли часть с TouchInterest - собираем
+                    if touchPart then
+                        local distance = (hrp.Position - touchPart.Position).Magnitude
+                        if distance <= states.collectRadius then
+                            pcall(function()
+                                firetouchinterest(hrp, touchPart, 0)
+                                task.wait()
+                                firetouchinterest(hrp, touchPart, 1)
+                            end)
+                            task.wait(0.05)
                         end
                     end
                 end
