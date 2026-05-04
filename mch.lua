@@ -178,32 +178,49 @@ mainTab:CreateToggle("Auto Claim Index", function(state)
     end)
 end)
 
+-- ═══════════════════════════════════════════
+--  AUTO COLLECT RECIPE (УПРОЩЁННАЯ ВЕРСИЯ)
+-- ═══════════════════════════════════════════
 mainTab:CreateToggle("Auto Collect Recipe", function(state)
     states.autoCollectRecipe = state
     task.spawn(function()
         while states.autoCollectRecipe do
             local zones = workspace:FindFirstChild("Zones")
-            local player = game:GetService("Players").LocalPlayer
-            local char = player.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
+            local hrp = game:GetService("Players").LocalPlayer.Character and game:GetService("Players").LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local VIM = game:GetService("VirtualInputManager")
             
             if zones and hrp then
                 local originalCFrame = hrp.CFrame
-                for i = 1, 25 do
+                
+                for _, zone in pairs(zones:GetChildren()) do
                     if not states.autoCollectRecipe then break end
-                    local zone = zones:FindFirstChild(tostring(i))
-                    local recipe = zone and zone:FindFirstChild("Recipe")
-                    local part = recipe and (recipe:FindFirstChild("MeshPart") or recipe:FindFirstChild("Part") or recipe)
                     
-                    if part and part:IsA("BasePart") then
-                        hrp.CFrame = part.CFrame + Vector3.new(0, 3, 0)
-                        task.wait(0.3)
-                        game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                        task.wait(0.1)
-                        game:GetService("VirtualInputManager"):SendKeyEvent(false, Enum.KeyCode.E, false, game)
-                        task.wait(0.3)
+                    -- Ищем прямо в зоне объекты с именем, начинающимся на "Recipe"
+                    for _, recipeObj in pairs(zone:GetChildren()) do
+                        if recipeObj.Name:match("^Recipe") then
+                            local attachment = recipeObj:FindFirstChild("RecipePromptAttachment")
+                            local prompt = attachment and attachment:FindFirstChild("RecipePrompt")
+                            
+                            if prompt then
+                                local teleportPart = recipeObj:FindFirstChild("MeshPart") or recipeObj:FindFirstChild("Part") or recipeObj
+                                
+                                if teleportPart and teleportPart:IsA("BasePart") then
+                                    pcall(function()
+                                        prompt.MaxActivationDistance = 99999
+                                        prompt.HoldDuration = 0
+                                        hrp.CFrame = teleportPart.CFrame + Vector3.new(0, 3, 0)
+                                        task.wait(0.2)
+                                        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                                        task.wait(0.05)
+                                        VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                                        task.wait(0.2)
+                                    end)
+                                end
+                            end
+                        end
                     end
                 end
+                
                 hrp.CFrame = originalCFrame
             end
             task.wait(30)
@@ -229,14 +246,10 @@ local AntiAfkService = {
 }
 
 local function removeAutoRejoin()
-    -- Пути к папкам AutoRejoin
     local autoRejoinPaths = {
-        -- Путь через Source
         {"Source", "Features", "AutoRejoin"},
         {"Source", "Features", "AutoRejoinService"},
-        -- Путь через Packages/Networker
         {"Packages", "_Index", "leifstout_networker@0.3.1", "networker", "_remotes", "AutoRejoinService"},
-        -- Другие возможные пути
         {"Features", "AutoRejoin"},
         {"AutoRejoin"},
     }
@@ -260,22 +273,18 @@ end
 
 local function startAntiAfk()
     if AntiAfkService.Active then return end
-    
     removeAutoRejoin()
-    
     AntiAfkService.Active = true
     AntiAfkService.Connection = game:GetService("Players").LocalPlayer.Idled:Connect(function()
         if AntiAfkService.Active then
-            local VirtualUser = game:GetService("VirtualUser")
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton2(Vector2.new())
+            game:GetService("VirtualUser"):CaptureController()
+            game:GetService("VirtualUser"):ClickButton2(Vector2.new())
         end
     end)
 end
 
 local function stopAntiAfk()
     if not AntiAfkService.Active then return end
-    
     AntiAfkService.Active = false
     if AntiAfkService.Connection then
         AntiAfkService.Connection:Disconnect()
@@ -284,22 +293,15 @@ local function stopAntiAfk()
 end
 
 miscTab:CreateToggle("Anti Afk", function(state)
-    if state then
-        startAntiAfk()
-    else
-        stopAntiAfk()
-    end
+    if state then startAntiAfk() else stopAntiAfk() end
 end)
 
 miscTab:CreateLabel("Other")
 
 miscTab:CreateButton("Redeem All Codes", function()
     if not codeRF then return end
-    local codes = {"2muchluck", "test", "gullible"}
-    for _, code in ipairs(codes) do
-        pcall(function()
-            codeRF:InvokeServer("redeem", code)
-        end)
+    for _, code in ipairs({"2muchluck", "test", "gullible"}) do
+        pcall(function() codeRF:InvokeServer("redeem", code) end)
         task.wait(0.5)
     end
 end)
@@ -318,8 +320,7 @@ creditsTab:CreateLabel("Thanks for using Cryo Hub!")
 task.spawn(function()
     while task.wait() do
         pcall(function()
-            local player = game:GetService("Players").LocalPlayer
-            local char = player.Character
+            local char = game:GetService("Players").LocalPlayer.Character
             local humanoid = char and char:FindFirstChildOfClass("Humanoid")
             if humanoid then
                 humanoid.WalkSpeed = states.walkSpeedValue
