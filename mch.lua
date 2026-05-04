@@ -229,9 +229,14 @@ local AntiAfkService = {
 }
 
 local function removeAutoRejoin()
+    -- Пути к папкам AutoRejoin
     local autoRejoinPaths = {
+        -- Путь через Source
         {"Source", "Features", "AutoRejoin"},
         {"Source", "Features", "AutoRejoinService"},
+        -- Путь через Packages/Networker
+        {"Packages", "_Index", "leifstout_networker@0.3.1", "networker", "_remotes", "AutoRejoinService"},
+        -- Другие возможные пути
         {"Features", "AutoRejoin"},
         {"AutoRejoin"},
     }
