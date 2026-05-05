@@ -246,29 +246,36 @@ local AntiAfkService = {
 }
 
 local function removeAutoRejoin()
-    local autoRejoinPaths = {
-        {"Source", "Features", "AutoRejoin"},
-        {"Source", "Features", "AutoRejoinService"},
-        {"Packages", "_Index", "leifstout_networker@0.3.1", "networker", "_remotes", "AutoRejoinService"},
-        {"Features", "AutoRejoin"},
-        {"AutoRejoin"},
-    }
+    -- Удаляем AutoRejoinService (через Packages)
+    pcall(function()
+        local service = ReplicatedStorage.Packages._Index["leifstout_networker@0.3.1"].networker._remotes.AutoRejoinService
+        if service then
+            service:Destroy()
+        end
+    end)
     
-    for _, path in ipairs(autoRejoinPaths) do
-        local current = ReplicatedStorage
-        local found = true
-        for _, name in ipairs(path) do
-            current = current:FindFirstChild(name)
-            if not current then
-                found = false
-                break
-            end
+    -- Удаляем AutoRejoin (через Source)
+    pcall(function()
+        local rejoin = ReplicatedStorage.Source.Features.AutoRejoin
+        if rejoin then
+            rejoin:Destroy()
         end
-        if found and current then
-            current:Destroy()
-            return
+    end)
+    
+    -- Альтернативные пути на всякий случай
+    pcall(function()
+        local rejoinAlt = ReplicatedStorage:FindFirstChild("AutoRejoin")
+        if rejoinAlt then
+            rejoinAlt:Destroy()
         end
-    end
+    end)
+    
+    pcall(function()
+        local serviceAlt = ReplicatedStorage:FindFirstChild("AutoRejoinService")
+        if serviceAlt then
+            serviceAlt:Destroy()
+        end
+    end)
 end
 
 local function startAntiAfk()
