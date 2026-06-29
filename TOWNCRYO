@@ -13,7 +13,7 @@ local Settings = _G.UltimateSettings or {
     AimbotPart = "Head", AimbotPriority = "Distance", AimbotWallCheck = true,
     FOVCircle = false, FOVColor = Color3.fromRGB(255, 0, 0),
     NoRecoil = false, NoSway = false, TriggerBot = false,
-    InfiniteAmmo = false, RapidFire = false,
+    InfiniteAmmo = false,
     ESP = false, ESPColor = Color3.fromRGB(255, 0, 0),
     ESPShowHP = false, ESPShowName = false, ESPShowDistance = false,
     FullBright = false, NoFog = false, Crosshair = false, UIKey = "K"
@@ -52,7 +52,6 @@ CombatTab:CreateToggle("No Recoil", function(v) Settings.NoRecoil = v; save(); s
 CombatTab:CreateToggle("No Sway", function(v) Settings.NoSway = v; save(); setNoSway(v) end)
 CombatTab:CreateToggle("Trigger Bot", function(v) Settings.TriggerBot = v; save(); if v then enableTriggerBot() else disableTriggerBot() end end)
 CombatTab:CreateToggle("Infinite Ammo", function(v) Settings.InfiniteAmmo = v; save(); if v then enableInfiniteAmmo() else disableInfiniteAmmo() end end)
-CombatTab:CreateToggle("Rapid Fire", function(v) Settings.RapidFire = v; save(); setRapidFire(v) end)
 
 -- Visuals Tab
 local VisualsTab = Window:CreateTab("Visuals")
@@ -185,12 +184,6 @@ function enableInfiniteAmmo() infAmmoActive = true; task.spawn(function() while 
         if tool:IsA("Tool") and tool:FindFirstChild("GunScript") then local ca = tool.GunScript:FindFirstChild("ClientAmmo"); if ca then ca.Value = 30 end end
     end end end); task.wait(0.1) end end) end
 function disableInfiniteAmmo() infAmmoActive = false end
-
--- Rapid Fire
-local rapidActive = false; local m1Down = false
-UserInputService.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then m1Down = true end end)
-UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then m1Down = false end end)
-function setRapidFire(v) rapidActive = v; if v then task.spawn(function() while rapidActive do if m1Down then VirtualInputManager:SendMouseButtonEvent(0,0,0,true,game,0); task.wait(0.01); VirtualInputManager:SendMouseButtonEvent(0,0,0,false,game,0) end; task.wait(0.05) end end) end end
 
 -- Crosshair
 local crosshairGui = nil
