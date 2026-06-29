@@ -1,3 +1,4 @@
+-- Cryo Hub - Ultimate Script
 local CryoLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/xlebaaa3-netizen/UIMAIN/refs/heads/main/CRYOLIB"))()
 
 local Players = game:GetService("Players")
@@ -8,701 +9,286 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 local Settings = _G.UltimateSettings or {
-    Aimbot = false,
-    AimbotKey = "T",
-    AimbotFOV = 180,
-    AimbotPart = "Head",
-    AimbotPriority = "Distance",
-    AimbotWallCheck = true,
-    FOVCircle = false,
-    FOVColor = Color3.fromRGB(255, 0, 0),
-    NoRecoil = false,
-    NoSway = false,
-    TriggerBot = false,
-    InfiniteAmmo = false,
-    RapidFire = false,
-    ESP = false,
-    ESPColor = Color3.fromRGB(255, 0, 0),
-    ESPShowHP = false,
-    ESPShowName = false,
-    ESPShowDistance = false,
-    FullBright = false,
-    NoFog = false,
-    Crosshair = false,
-    UIKey = "K"
+    Aimbot = false, AimbotKey = "T", AimbotFOV = 180,
+    AimbotPart = "Head", AimbotPriority = "Distance", AimbotWallCheck = true,
+    FOVCircle = false, FOVColor = Color3.fromRGB(255, 0, 0),
+    NoRecoil = false, NoSway = false, TriggerBot = false,
+    InfiniteAmmo = false, RapidFire = false,
+    ESP = false, ESPColor = Color3.fromRGB(255, 0, 0),
+    ESPShowHP = false, ESPShowName = false, ESPShowDistance = false,
+    FullBright = false, NoFog = false, Crosshair = false, UIKey = "K"
 }
 
-local function save() 
-    _G.UltimateSettings = Settings 
-end
+local function save() _G.UltimateSettings = Settings end
 
 local Window = CryoLib:CreateWindow("Cryo Hub")
+if Settings.UIKey ~= "K" then Window:SetGuiKey(Settings.UIKey) end
 
-if Settings.UIKey and Settings.UIKey ~= "K" then
-    Window:SetGuiKey(Settings.UIKey)
-end
-
--- // Combat Tab
+-- Combat Tab
 local CombatTab = Window:CreateTab("Combat")
 CombatTab:CreateLabel("Main")
 
-local function aimbotOn()
-    Settings.Aimbot = true
-    save()
-    enableAimbot()
-    updateFOVCircle()
-end
-
-local function aimbotOff()
-    Settings.Aimbot = false
-    save()
-    disableAimbot()
-    updateFOVCircle()
-end
+local function aimbotOn() Settings.Aimbot = true; save(); enableAimbot(); updateFOVCircle() end
+local function aimbotOff() Settings.Aimbot = false; save(); disableAimbot(); updateFOVCircle() end
 
 local AimbotToggle = CombatTab:CreateToggle("AimBot", function(v)
     if v then aimbotOn() else aimbotOff() end
 end)
 
 CombatTab:CreateKeybind("Hotkey", Settings.AimbotKey, function(key)
-    if Settings.Aimbot then
-        aimbotOff()
-        AimbotToggle.Set(false)
-    else
-        aimbotOn()
-        AimbotToggle.Set(true)
-    end
+    if Settings.Aimbot then aimbotOff(); AimbotToggle.Set(false)
+    else aimbotOn(); AimbotToggle.Set(true) end
 end)
 
-CombatTab:CreateSlider("FOV", 10, 360, Settings.AimbotFOV, function(v)
-    Settings.AimbotFOV = v
-    save()
-    updateFOVCircle()
-end)
-
-CombatTab:CreateDropdown("Aim Part", {"Head", "Torso"}, false, function(v)
-    Settings.AimbotPart = v
-    save()
-end)
-
-CombatTab:CreateDropdown("Priority", {"Distance", "FOV", "Health"}, false, function(v)
-    Settings.AimbotPriority = v
-    save()
-end)
-
-CombatTab:CreateToggle("Wall Check", function(v)
-    Settings.AimbotWallCheck = v
-    save()
-end)
-
-CombatTab:CreateToggle("FOV", function(v)
-    Settings.FOVCircle = v
-    save()
-    updateFOVCircle()
-end)
-
-CombatTab:CreateColorPicker("FOV Color", Settings.FOVColor, function(c)
-    Settings.FOVColor = c
-    save()
-    updateFOVCircle()
-end)
+CombatTab:CreateSlider("FOV", 10, 360, Settings.AimbotFOV, function(v) Settings.AimbotFOV = v; save(); updateFOVCircle() end)
+CombatTab:CreateDropdown("Aim Part", {"Head", "UpperTorso", "HumanoidRootPart"}, false, function(v) Settings.AimbotPart = v; save() end)
+CombatTab:CreateDropdown("Priority", {"Distance", "FOV", "Health"}, false, function(v) Settings.AimbotPriority = v; save() end)
+CombatTab:CreateToggle("Wall Check", function(v) Settings.AimbotWallCheck = v; save() end)
+CombatTab:CreateToggle("FOV", function(v) Settings.FOVCircle = v; save(); updateFOVCircle() end)
+CombatTab:CreateColorPicker("FOV Color", Settings.FOVColor, function(c) Settings.FOVColor = c; save(); updateFOVCircle() end)
 
 CombatTab:CreateLabel("Weapon")
+CombatTab:CreateToggle("No Recoil", function(v) Settings.NoRecoil = v; save(); setNoRecoil(v) end)
+CombatTab:CreateToggle("No Sway", function(v) Settings.NoSway = v; save(); setNoSway(v) end)
+CombatTab:CreateToggle("Trigger Bot", function(v) Settings.TriggerBot = v; save(); if v then enableTriggerBot() else disableTriggerBot() end end)
+CombatTab:CreateToggle("Infinite Ammo", function(v) Settings.InfiniteAmmo = v; save(); if v then enableInfiniteAmmo() else disableInfiniteAmmo() end end)
+CombatTab:CreateToggle("Rapid Fire", function(v) Settings.RapidFire = v; save(); setRapidFire(v) end)
 
-CombatTab:CreateToggle("No Recoil", function(v) 
-    Settings.NoRecoil = v
-    save()
-    setNoRecoil(v) 
-end)
-
-CombatTab:CreateToggle("No Sway", function(v) 
-    Settings.NoSway = v
-    save()
-    setNoSway(v) 
-end)
-
-CombatTab:CreateToggle("Trigger Bot", function(v)
-    Settings.TriggerBot = v
-    save()
-    if v then enableTriggerBot() else disableTriggerBot() end
-end)
-
-CombatTab:CreateToggle("Infinite Ammo", function(v) 
-    Settings.InfiniteAmmo = v
-    save()
-    if v then enableInfiniteAmmo() else disableInfiniteAmmo() end 
-end)
-
-CombatTab:CreateToggle("Rapid Fire", function(v) 
-    Settings.RapidFire = v
-    save()
-    setRapidFire(v) 
-end)
-
--- // Visuals Tab
+-- Visuals Tab
 local VisualsTab = Window:CreateTab("Visuals")
 VisualsTab:CreateLabel("ESP")
+VisualsTab:CreateToggle("ESP", function(v) Settings.ESP = v; save(); if v then enableESP() else disableESP() end end)
+VisualsTab:CreateColorPicker("ESP Color", Settings.ESPColor, function(c) Settings.ESPColor = c; save() end)
+VisualsTab:CreateToggle("Show HP", function(v) Settings.ESPShowHP = v; save() end)
+VisualsTab:CreateToggle("Show Name", function(v) Settings.ESPShowName = v; save() end)
+VisualsTab:CreateToggle("Show Distance", function(v) Settings.ESPShowDistance = v; save() end)
 
-VisualsTab:CreateToggle("ESP", function(v) 
-    Settings.ESP = v
-    save()
-    if v then enableESP() else disableESP() end 
-end)
-
-VisualsTab:CreateColorPicker("ESP Color", Settings.ESPColor, function(c) 
-    Settings.ESPColor = c
-    save() 
-end)
-
-VisualsTab:CreateToggle("Show HP", function(v) 
-    Settings.ESPShowHP = v
-    save() 
-end)
-
-VisualsTab:CreateToggle("Show Name", function(v) 
-    Settings.ESPShowName = v
-    save() 
-end)
-
-VisualsTab:CreateToggle("Show Distance", function(v) 
-    Settings.ESPShowDistance = v
-    save() 
-end)
-
--- // Misc Tab
+-- Misc Tab
 local MiscTab = Window:CreateTab("Misc")
+MiscTab:CreateToggle("Full Bright", function(v) Settings.FullBright = v; save(); setFullBright(v) end)
+MiscTab:CreateToggle("No Fog", function(v) Settings.NoFog = v; save(); setNoFog(v) end)
+MiscTab:CreateToggle("Crosshair", function(v) Settings.Crosshair = v; save(); if v then createCrosshair() else removeCrosshair() end end)
 
-MiscTab:CreateToggle("Full Bright", function(v) 
-    Settings.FullBright = v
-    save()
-    setFullBright(v) 
-end)
-
-MiscTab:CreateToggle("No Fog", function(v) 
-    Settings.NoFog = v
-    save()
-    setNoFog(v) 
-end)
-
-MiscTab:CreateToggle("Crosshair", function(v) 
-    Settings.Crosshair = v
-    save()
-    if v then createCrosshair() else removeCrosshair() end 
-end)
-
--- // Info Tab
+-- Info Tab
 local InfoTab = Window:CreateTab("Info")
 InfoTab:CreateLabel("Thanks You Lu4ikk1")
+InfoTab:CreateKeybind("UI Key", Settings.UIKey, function(key) Settings.UIKey = key; save(); Window:SetGuiKey(key) end)
 
-InfoTab:CreateKeybind("UI Key", Settings.UIKey, function(key)
-    Settings.UIKey = key
-    save()
-    Window:SetGuiKey(key)
-end)
-
--- // FOV Circle
+-- FOV Circle
 local FOVCircle = nil
-
 function updateFOVCircle()
-    if FOVCircle then 
-        pcall(function() FOVCircle:Remove() end) 
-        FOVCircle = nil 
-    end
-    
-    if not (Settings.Aimbot and Settings.FOVCircle) then 
-        return 
-    end
-    
-    FOVCircle = Drawing.new("Circle")
-    FOVCircle.Visible = true
-    FOVCircle.Thickness = 1.5
-    FOVCircle.Transparency = 0.7
-    FOVCircle.ZIndex = 10
-    
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
-        if not FOVCircle or not Settings.Aimbot then 
-            if connection then 
-                connection:Disconnect() 
-            end 
-            return 
-        end
-        
-        local camera = workspace.CurrentCamera
-        if camera then
-            FOVCircle.Position = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-            FOVCircle.Radius = Settings.AimbotFOV * 3
-            FOVCircle.Color = Settings.FOVColor
-        end
+    if FOVCircle then pcall(function() FOVCircle:Remove() end); FOVCircle = nil end
+    if not (Settings.Aimbot and Settings.FOVCircle) then return end
+    FOVCircle = Drawing.new("Circle"); FOVCircle.Visible = true; FOVCircle.Thickness = 1.5; FOVCircle.Transparency = 0.7; FOVCircle.ZIndex = 10
+    local c; c = RunService.RenderStepped:Connect(function()
+        if not FOVCircle or not Settings.Aimbot then if c then c:Disconnect() end return end
+        local cam = workspace.CurrentCamera
+        if cam then FOVCircle.Position = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2); FOVCircle.Radius = Settings.AimbotFOV*3; FOVCircle.Color = Settings.FOVColor end
     end)
 end
 
--- // Full Bright
-function setFullBright(state)
-    Lighting.Brightness = state and 3 or 1
-    Lighting.FogEnd = state and 99999 or 1000
-    Lighting.OutdoorAmbient = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(128, 128, 128)
-    Lighting.GlobalShadows = not state
-end
+-- Functions
+function setFullBright(v) Lighting.Brightness = v and 3 or 1; Lighting.FogEnd = v and 99999 or 1000; Lighting.OutdoorAmbient = v and Color3.fromRGB(255,255,255) or Color3.fromRGB(128,128,128); Lighting.GlobalShadows = not v end
+function setNoFog(v) Lighting.FogEnd = v and 99999 or 1000 end
 
--- // No Fog
-function setNoFog(state) 
-    Lighting.FogEnd = state and 99999 or 1000 
-end
-
--- // ESP
-local espEnabled = false
-
-function espUpdateLoop()
-    while espEnabled do
-        pcall(function()
-            for _, player in ipairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    local head = player.Character:FindFirstChild("Head")
-                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-                    
-                    if head and humanoid and humanoid.Health > 0 then
-                        local highlight = player.Character:FindFirstChild("ESP_HL")
-                        if not highlight then
-                            highlight = Instance.new("Highlight")
-                            highlight.Name = "ESP_HL"
-                            highlight.FillTransparency = 0.5
-                            highlight.Parent = player.Character
+-- ESP
+local espActive = false
+function espLoop()
+    while espActive do pcall(function()
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character then
+                local head = plr.Character:FindFirstChild("Head")
+                local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+                if head and hum and hum.Health > 0 then
+                    local hl = plr.Character:FindFirstChild("ESP_HL")
+                    if not hl then hl = Instance.new("Highlight"); hl.Name = "ESP_HL"; hl.FillTransparency = 0.5; hl.Parent = plr.Character end
+                    hl.Adornee = plr.Character; hl.FillColor = Settings.ESPColor
+                    local showInfo = Settings.ESPShowName or Settings.ESPShowHP or Settings.ESPShowDistance
+                    local bb = head:FindFirstChild("ESP_BB")
+                    if showInfo then
+                        if not bb then bb = Instance.new("BillboardGui"); bb.Name = "ESP_BB"; bb.Size = UDim2.new(0,130,0,20); bb.StudsOffset = Vector3.new(0,2.5,0); bb.AlwaysOnTop = true; bb.Parent = head
+                            local lb = Instance.new("TextLabel",bb); lb.Size = UDim2.new(1,0,0,20); lb.BackgroundTransparency = 1; lb.TextColor3 = Color3.fromRGB(255,255,255); lb.TextSize = 10; lb.Font = Enum.Font.GothamBold end
+                        local lb = bb:FindFirstChild("TextLabel")
+                        if lb then
+                            local txt = ""
+                            if Settings.ESPShowName then txt = txt .. plr.Name .. " " end
+                            if Settings.ESPShowHP then txt = txt .. math.floor(hum.Health) .. "HP " end
+                            if Settings.ESPShowDistance and LocalPlayer.Character then
+                                local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                if root then txt = txt .. math.floor((head.Position - root.Position).Magnitude) .. "m" end
+                            end
+                            lb.Text = txt
                         end
-                        highlight.Adornee = player.Character
-                        highlight.FillColor = Settings.ESPColor
-                        
-                        if Settings.ESPShowName or Settings.ESPShowHP or Settings.ESPShowDistance then
-                            local billboard = head:FindFirstChild("ESP_BB")
-                            if not billboard then
-                                billboard = Instance.new("BillboardGui")
-                                billboard.Name = "ESP_BB"
-                                billboard.Size = UDim2.new(0, 130, 0, 20)
-                                billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-                                billboard.AlwaysOnTop = true
-                                billboard.Parent = head
-                                
-                                local label = Instance.new("TextLabel")
-                                label.Size = UDim2.new(1, 0, 0, 20)
-                                label.BackgroundTransparency = 1
-                                label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                                label.TextSize = 10
-                                label.Font = Enum.Font.GothamBold
-                                label.Parent = billboard
-                            end
-                            
-                            local label = billboard:FindFirstChild("TextLabel")
-                            if label then
-                                local infoText = ""
-                                if Settings.ESPShowName then 
-                                    infoText = infoText .. player.Name .. " " 
-                                end
-                                if Settings.ESPShowHP then 
-                                    infoText = infoText .. math.floor(humanoid.Health) .. "HP " 
-                                end
-                                if Settings.ESPShowDistance and LocalPlayer.Character then
-                                    local root = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                                    if root then 
-                                        infoText = infoText .. math.floor((head.Position - root.Position).Magnitude) .. "m" 
-                                    end
-                                end
-                                label.Text = infoText
-                            end
-                        else
-                            local billboard = head:FindFirstChild("ESP_BB")
-                            if billboard then 
-                                billboard:Destroy() 
-                            end
-                        end
-                    end
+                    elseif bb then bb:Destroy() end
                 end
             end
-        end)
-        task.wait(0.3)
-    end
+        end
+    end); task.wait(0.3) end
 end
-
-function enableESP() 
-    espEnabled = true
-    task.spawn(espUpdateLoop) 
-end
-
+function enableESP() espActive = true; task.spawn(espLoop) end
 function disableESP()
-    espEnabled = false
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.Character then
-            pcall(function()
-                local highlight = player.Character:FindFirstChild("ESP_HL")
-                if highlight then 
-                    highlight:Destroy() 
-                end
-            end)
-            local head = player.Character:FindFirstChild("Head")
-            if head then
-                local billboard = head:FindFirstChild("ESP_BB")
-                if billboard then 
-                    billboard:Destroy() 
-                end
-            end
+    espActive = false
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Character then
+            pcall(function() local hl = plr.Character:FindFirstChild("ESP_HL"); if hl then hl:Destroy() end end)
+            local head = plr.Character:FindFirstChild("Head")
+            if head then local bb = head:FindFirstChild("ESP_BB"); if bb then bb:Destroy() end end
         end
     end
 end
 
--- // No Recoil
-local recoilEnabled = false
-
-function setNoRecoil(state)
-    if state then
-        recoilEnabled = true
-        task.spawn(function()
-            while recoilEnabled do
-                pcall(function()
-                    local recoil = LocalPlayer:FindFirstChild("Recoil")
-                    if recoil then
-                        for _, child in ipairs(recoil:GetChildren()) do
-                            if child:IsA("CFrameValue") then 
-                                child.Value = CFrame.new()
-                            elseif child:IsA("NumberValue") then 
-                                child.Value = 0 
-                            end
-                        end
-                    end
-                end)
-                task.wait()
-            end
-        end)
-    else
-        recoilEnabled = false
-    end
+-- No Recoil
+local recoilActive = false
+function setNoRecoil(v)
+    if v then recoilActive = true; task.spawn(function() while recoilActive do pcall(function()
+        local r = LocalPlayer:FindFirstChild("Recoil")
+        if r then for _, c in ipairs(r:GetChildren()) do if c:IsA("CFrameValue") then c.Value = CFrame.new() elseif c:IsA("NumberValue") then c.Value = 0 end end end
+    end); task.wait() end end) else recoilActive = false end
 end
 
--- // No Sway
-local swayEnabled = false
-
-function setNoSway(state)
-    if state then
-        swayEnabled = true
-        task.spawn(function()
-            while swayEnabled do
-                pcall(function()
-                    local character = LocalPlayer.Character
-                    if character then
-                        local gunAim = character:FindFirstChild("GUNAIMVALUE")
-                        if gunAim then
-                            for _, child in ipairs(gunAim:GetChildren()) do
-                                if child:IsA("NumberValue") then 
-                                    child.Value = 0
-                                elseif child.Name == "IsAimed" then 
-                                    child.Value = false 
-                                end
-                            end
-                        end
-                    end
-                end)
-                task.wait()
-            end
-        end)
-    else
-        swayEnabled = false
-    end
+-- No Sway
+local swayActive = false
+function setNoSway(v)
+    if v then swayActive = true; task.spawn(function() while swayActive do pcall(function()
+        local char = LocalPlayer.Character
+        if char then local gav = char:FindFirstChild("GUNAIMVALUE")
+            if gav then for _, c in ipairs(gav:GetChildren()) do if c:IsA("NumberValue") then c.Value = 0 elseif c.Name == "IsAimed" then c.Value = false end end end
+        end
+    end); task.wait() end end) else swayActive = false end
 end
 
--- // Trigger Bot
-local triggerEnabled = false
-local mouseHeld = false
-
+-- Trigger Bot
+local triggerActive = false; local mouseHeld = false
 function enableTriggerBot()
-    triggerEnabled = true
-    task.spawn(function()
-        while triggerEnabled do
-            pcall(function()
-                local camera = workspace.CurrentCamera
-                if camera and LocalPlayer.Character then
-                    local ray = Ray.new(camera.CFrame.Position, camera.CFrame.LookVector * 500)
-                    local hitPart = workspace:FindPartOnRay(ray, LocalPlayer.Character)
-                    local targetFound = false
-                    
-                    if hitPart then
-                        local humanoid = hitPart.Parent:FindFirstChildOfClass("Humanoid") 
-                            or (hitPart.Parent.Parent and hitPart.Parent.Parent:FindFirstChildOfClass("Humanoid"))
-                        if humanoid and humanoid.Health > 0 and humanoid.Parent ~= LocalPlayer.Character then
-                            targetFound = true
-                        end
-                    end
-                    
-                    if targetFound and not mouseHeld then
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                        mouseHeld = true
-                    elseif not targetFound and mouseHeld then
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                        mouseHeld = false
-                    end
-                end
-            end)
-            task.wait(0.1)
-        end
-        
-        if mouseHeld then
-            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-            mouseHeld = false
-        end
-    end)
-end
-
-function disableTriggerBot()
-    triggerEnabled = false
-    if mouseHeld then
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-        mouseHeld = false
-    end
-end
-
--- // Infinite Ammo
-local infiniteAmmoEnabled = false
-
-function enableInfiniteAmmo()
-    infiniteAmmoEnabled = true
-    task.spawn(function()
-        while infiniteAmmoEnabled do
-            pcall(function()
-                if LocalPlayer.Character then
-                    for _, tool in ipairs(LocalPlayer.Character:GetChildren()) do
-                        if tool:IsA("Tool") and tool:FindFirstChild("GunScript") then
-                            local clientAmmo = tool.GunScript:FindFirstChild("ClientAmmo")
-                            if clientAmmo then 
-                                clientAmmo.Value = 30 
-                            end
-                        end
-                    end
-                end
-            end)
-            task.wait(0.1)
-        end
-    end)
-end
-
-function disableInfiniteAmmo() 
-    infiniteAmmoEnabled = false 
-end
-
--- // Rapid Fire
-local rapidFireEnabled = false
-local mouseButtonDown = false
-
-UserInputService.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then 
-        mouseButtonDown = true 
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then 
-        mouseButtonDown = false 
-    end
-end)
-
-function setRapidFire(state)
-    rapidFireEnabled = state
-    if state then
-        task.spawn(function()
-            while rapidFireEnabled do
-                if mouseButtonDown then
-                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                    task.wait(0.01)
-                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-                end
-                task.wait(0.05)
+    triggerActive = true; task.spawn(function()
+        while triggerActive do pcall(function()
+            local cam = workspace.CurrentCamera
+            if cam and LocalPlayer.Character then
+                local ray = Ray.new(cam.CFrame.Position, cam.CFrame.LookVector*500)
+                local hit = workspace:FindPartOnRay(ray, LocalPlayer.Character)
+                local found = false
+                if hit then local hum = hit.Parent:FindFirstChildOfClass("Humanoid") or (hit.Parent.Parent and hit.Parent.Parent:FindFirstChildOfClass("Humanoid"))
+                    if hum and hum.Health > 0 and hum.Parent ~= LocalPlayer.Character then found = true end end
+                if found and not mouseHeld then VirtualInputManager:SendMouseButtonEvent(0,0,0,true,game,0); mouseHeld = true
+                elseif not found and mouseHeld then VirtualInputManager:SendMouseButtonEvent(0,0,0,false,game,0); mouseHeld = false end
             end
-        end)
-    end
+        end); task.wait(0.1) end
+        if mouseHeld then VirtualInputManager:SendMouseButtonEvent(0,0,0,false,game,0); mouseHeld = false end
+    end)
 end
+function disableTriggerBot() triggerActive = false; if mouseHeld then VirtualInputManager:SendMouseButtonEvent(0,0,0,false,game,0); mouseHeld = false end end
 
--- // Crosshair
+-- Infinite Ammo
+local infAmmoActive = false
+function enableInfiniteAmmo() infAmmoActive = true; task.spawn(function() while infAmmoActive do pcall(function()
+    if LocalPlayer.Character then for _, tool in ipairs(LocalPlayer.Character:GetChildren()) do
+        if tool:IsA("Tool") and tool:FindFirstChild("GunScript") then local ca = tool.GunScript:FindFirstChild("ClientAmmo"); if ca then ca.Value = 30 end end
+    end end end); task.wait(0.1) end end) end
+function disableInfiniteAmmo() infAmmoActive = false end
+
+-- Rapid Fire
+local rapidActive = false; local m1Down = false
+UserInputService.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then m1Down = true end end)
+UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then m1Down = false end end)
+function setRapidFire(v) rapidActive = v; if v then task.spawn(function() while rapidActive do if m1Down then VirtualInputManager:SendMouseButtonEvent(0,0,0,true,game,0); task.wait(0.01); VirtualInputManager:SendMouseButtonEvent(0,0,0,false,game,0) end; task.wait(0.05) end end) end end
+
+-- Crosshair
 local crosshairGui = nil
-
 function createCrosshair()
     if crosshairGui then return end
-    
-    crosshairGui = Instance.new("ScreenGui")
-    crosshairGui.Name = "Crosshair"
-    crosshairGui.ResetOnSpawn = false
-    crosshairGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    
-    local dot = Instance.new("Frame", crosshairGui)
-    dot.Size = UDim2.new(0, 4, 0, 4)
-    dot.Position = UDim2.new(0.5, -2, 0.5, -32)
-    dot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    dot.BorderSizePixel = 0
-    
-    Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+    crosshairGui = Instance.new("ScreenGui"); crosshairGui.Name = "Crosshair"; crosshairGui.ResetOnSpawn = false; crosshairGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    local dot = Instance.new("Frame",crosshairGui); dot.Size = UDim2.new(0,4,0,4); dot.Position = UDim2.new(0.5,-2,0.5,-32); dot.BackgroundColor3 = Color3.fromRGB(255,255,255); dot.BorderSizePixel = 0
+    Instance.new("UICorner",dot).CornerRadius = UDim.new(1,0)
 end
+function removeCrosshair() if crosshairGui then crosshairGui:Destroy(); crosshairGui = nil end end
 
-function removeCrosshair()
-    if crosshairGui then 
-        crosshairGui:Destroy()
-        crosshairGui = nil 
-    end
-end
-
--- // Wall Check
-local function canSeeTarget(targetPart)
-    if not Settings.AimbotWallCheck then 
-        return true 
-    end
-    
-    local camera = workspace.CurrentCamera
-    local character = LocalPlayer.Character
-    
-    if not camera or not character then 
-        return true 
-    end
-    
-    local head = character:FindFirstChild("Head")
-    if not head then 
-        return true 
-    end
-    
-    local origin = head.Position
-    local direction = (targetPart.Position - origin).Unit
-    local distance = (targetPart.Position - origin).Magnitude
-    
-    local rayParams = RaycastParams.new()
-    rayParams.FilterType = Enum.RaycastFilterType.Exclude
-    rayParams.FilterDescendantsInstances = {character}
-    
-    local rayResult = workspace:Raycast(origin, direction * distance, rayParams)
-    
-    if rayResult then
-        return rayResult.Instance:IsDescendantOf(targetPart.Parent)
-    end
-    
+-- Wall Check
+local function canSeeTarget(part)
+    if not Settings.AimbotWallCheck then return true end
+    local char = LocalPlayer.Character; if not char then return true end
+    local head = char:FindFirstChild("Head"); if not head then return true end
+    local origin, dir, dist = head.Position, (part.Position-head.Position).Unit, (part.Position-head.Position).Magnitude
+    local params = RaycastParams.new(); params.FilterType = Enum.RaycastFilterType.Exclude; params.FilterDescendantsInstances = {char}
+    local result = workspace:Raycast(origin, dir*dist, params)
+    if result then return result.Instance:IsDescendantOf(part.Parent) end
     return true
 end
 
--- // Aimbot
-local aimbotEnabled = false
-local aimbotConnection = nil
+-- Aimbot
+local aimbotActive = false; local aimbotConn = nil
+
+local function getTargetPart(char)
+    local partName = Settings.AimbotPart
+    if partName == "Head" then return char:FindFirstChild("Head")
+    elseif partName == "UpperTorso" then return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+    elseif partName == "HumanoidRootPart" then return char:FindFirstChild("HumanoidRootPart")
+    end
+    return char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+end
 
 local function getValidTargets()
     local targets = {}
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local targetPart = Settings.AimbotPart == "Head" 
-                and player.Character:FindFirstChild("Head") 
-                or player.Character:FindFirstChild("UpperTorso") 
-                or player.Character:FindFirstChild("HumanoidRootPart")
-                
-            local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-            
-            if targetPart and humanoid and humanoid.Health > 0 then
-                table.insert(targets, {
-                    part = targetPart,
-                    humanoid = humanoid,
-                    player = player
-                })
-            end
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local part = getTargetPart(plr.Character)
+            local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+            if part and hum and hum.Health > 0 then table.insert(targets, {part=part, hum=hum, player=plr}) end
         end
     end
-    
     return targets
 end
 
 function enableAimbot()
-    aimbotEnabled = true
-    
-    if aimbotConnection then 
-        aimbotConnection:Disconnect() 
-    end
-    
-    aimbotConnection = RunService.RenderStepped:Connect(function()
-        if not aimbotEnabled then return end
-        
+    aimbotActive = true; if aimbotConn then aimbotConn:Disconnect() end
+    aimbotConn = RunService.RenderStepped:Connect(function()
+        if not aimbotActive then return end
         pcall(function()
-            local camera = workspace.CurrentCamera
-            if not camera or not LocalPlayer.Character then return end
-            
-            local cameraPosition = camera.CFrame.Position
-            local cameraDirection = camera.CFrame.LookVector
+            local cam = workspace.CurrentCamera
+            if not cam or not LocalPlayer.Character then return end
+            local camPos, camDir = cam.CFrame.Position, cam.CFrame.LookVector
             local targets = getValidTargets()
-            
             if #targets == 0 then return end
-            
-            local bestTarget = nil
-            
+            local best = nil
             if Settings.AimbotPriority == "Distance" then
-                local closestDistance = 99999
-                for _, target in ipairs(targets) do
-                    if not canSeeTarget(target.part) then continue end
-                    
-                    local distance = (target.part.Position - cameraPosition).Magnitude
-                    local direction = (target.part.Position - cameraPosition).Unit
-                    local angle = math.deg(math.acos(math.clamp(cameraDirection:Dot(direction), -1, 1)))
-                    
-                    if angle < Settings.AimbotFOV / 2 and distance < closestDistance then
-                        closestDistance = distance
-                        bestTarget = target
-                    end
+                local bestDist = 99999
+                for _, t in ipairs(targets) do
+                    if not canSeeTarget(t.part) then continue end
+                    local dist = (t.part.Position-camPos).Magnitude
+                    local ang = math.deg(math.acos(math.clamp(camDir:Dot((t.part.Position-camPos).Unit),-1,1)))
+                    if ang < Settings.AimbotFOV/2 and dist < bestDist then bestDist = dist; best = t end
                 end
             elseif Settings.AimbotPriority == "FOV" then
-                local smallestAngle = 999
-                for _, target in ipairs(targets) do
-                    if not canSeeTarget(target.part) then continue end
-                    
-                    local direction = (target.part.Position - cameraPosition).Unit
-                    local angle = math.deg(math.acos(math.clamp(cameraDirection:Dot(direction), -1, 1)))
-                    
-                    if angle < Settings.AimbotFOV / 2 and angle < smallestAngle then
-                        smallestAngle = angle
-                        bestTarget = target
-                    end
+                local bestAng = 999
+                for _, t in ipairs(targets) do
+                    if not canSeeTarget(t.part) then continue end
+                    local ang = math.deg(math.acos(math.clamp(camDir:Dot((t.part.Position-camPos).Unit),-1,1)))
+                    if ang < Settings.AimbotFOV/2 and ang < bestAng then bestAng = ang; best = t end
                 end
             elseif Settings.AimbotPriority == "Health" then
-                local lowestHealth = 99999
-                for _, target in ipairs(targets) do
-                    if not canSeeTarget(target.part) then continue end
-                    
-                    local direction = (target.part.Position - cameraPosition).Unit
-                    local angle = math.deg(math.acos(math.clamp(cameraDirection:Dot(direction), -1, 1)))
-                    
-                    if angle < Settings.AimbotFOV / 2 and target.humanoid.Health < lowestHealth then
-                        lowestHealth = target.humanoid.Health
-                        bestTarget = target
-                    end
+                local bestHP = 99999
+                for _, t in ipairs(targets) do
+                    if not canSeeTarget(t.part) then continue end
+                    local ang = math.deg(math.acos(math.clamp(camDir:Dot((t.part.Position-camPos).Unit),-1,1)))
+                    if ang < Settings.AimbotFOV/2 and t.hum.Health < bestHP then bestHP = t.hum.Health; best = t end
                 end
             end
-            
-            if bestTarget then
-                camera.CFrame = CFrame.new(cameraPosition, bestTarget.part.Position)
-            end
+            if best then cam.CFrame = CFrame.new(camPos, best.part.Position) end
         end)
     end)
 end
+function disableAimbot() aimbotActive = false; if aimbotConn then aimbotConn:Disconnect(); aimbotConn = nil end end
 
-function disableAimbot()
-    aimbotEnabled = false
-    if aimbotConnection then 
-        aimbotConnection:Disconnect()
-        aimbotConnection = nil 
-    end
-end
-
--- // Character Respawn Handler
+-- Respawn
 LocalPlayer.CharacterAdded:Connect(function()
     task.wait(0.5)
-    
-    if crosshairGui and not crosshairGui.Parent then 
-        crosshairGui.Parent = LocalPlayer:WaitForChild("PlayerGui") 
-    end
-    
+    if crosshairGui and not crosshairGui.Parent then crosshairGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
     if Settings.NoRecoil then setNoRecoil(true) end
     if Settings.NoSway then setNoSway(true) end
     if Settings.InfiniteAmmo then enableInfiniteAmmo() end
-    
     updateFOVCircle()
 end)
 
--- // Load saved settings
+-- Load
 if Settings.FullBright then setFullBright(true) end
 if Settings.NoFog then setNoFog(true) end
 if Settings.ESP then enableESP() end
